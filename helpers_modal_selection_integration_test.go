@@ -68,8 +68,22 @@ func TestModalSelectionIntegration(t *testing.T) {
 	require.NoError(t, modal.Switch(ctx, b, paths, true))
 	assert.Same(t, b, modal.Object())
 
-	// A failed BeginSelections leaves nothing in selection mode
+	// Paths the engine would reject are caught before they lock the app
 	require.NoError(t, modal.Switch(ctx, nil, nil, false))
-	assert.Error(t, modal.Switch(ctx, b, []string{"/nope"}, true))
+	for _, paths := range [][]string{{"/nope"}, {""}, nil} {
+		assert.ErrorIs(t, modal.Switch(ctx, b, paths, true), ErrInvalidSelectionPaths)
+	}
 	assert.Nil(t, modal.Object())
+	_, err = b.SelectListObjectValues(ctx, "/qListObjectDef", []int{0}, false, false)
+	assert.NoError(t, err, "selections still work")
+
+	// Tree data can be in selection mode too
+	tree, err := doc.CreateSessionObjectRaw(ctx, map[string]any{
+		"qInfo":        map[string]any{"qType": "tree"},
+		"qTreeDataDef": map[string]any{"qDimensions": []any{map[string]any{"qDef": map[string]any{"qFieldDefs": []string{"A"}}}}},
+	})
+	require.NoError(t, err)
+	require.NoError(t, modal.Switch(ctx, tree, []string{"/qTreeDataDef"}, true))
+	assert.Same(t, tree, modal.Object())
+	require.NoError(t, modal.Abort(ctx, false))
 }
