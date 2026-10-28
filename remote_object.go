@@ -21,9 +21,13 @@ type (
 )
 
 // ChangedChannel returns a channel that will receive changes when the underlying object is invalidated.
+// When the channel's buffer is full, further changes are not sent until it is read, since the buffered
+// ones already say that the object changed.
 func (r *RemoteObject) ChangedChannel() chan struct{} {
 	channel := make(chan struct{}, 16)
+	r.mutex.Lock()
 	r.changedChannels[channel] = true
+	r.mutex.Unlock()
 	return channel
 }
 
@@ -45,7 +49,11 @@ func (r *RemoteObject) Closed() chan struct{} {
 func (r *RemoteObject) signalChanged() {
 	r.mutex.Lock()
 	for channel := range r.changedChannels {
-		channel <- struct{}{}
+		// Never block, this runs on the goroutine that reads from the socket
+		select {
+		case channel <- struct{}{}:
+		default:
+		}
 	}
 	r.mutex.Unlock()
 }
