@@ -21,19 +21,12 @@ func (doc *Doc) GetOrCreateSessionObject(ctx context.Context, props *GenericObje
 	if !errors.Is(err, ErrObjectNotFound) {
 		return obj, err
 	}
-	obj, err = doc.CreateSessionObject(ctx, props)
-	if err != nil {
-		return nil, err
+	obj, err = doc.CreateSessionObjectWithID(ctx, props)
+	if errors.Is(err, ErrIDTaken) {
+		// Someone else created it in the meantime
+		return doc.GetObject(ctx, id)
 	}
-	if obj.GenericId != id {
-		// The id was taken in the meantime, so the engine gave the new object a random id.
-		// Remove that duplicate and use the object that has the id.
-		if _, err := doc.DestroySessionObject(ctx, obj.GenericId); err != nil {
-			return nil, err
-		}
-		return doc.GetOrCreateSessionObject(ctx, props)
-	}
-	return obj, nil
+	return obj, err
 }
 
 // SessionList is a session object holding a list of app objects, such as the sheet list.
