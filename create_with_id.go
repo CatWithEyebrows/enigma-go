@@ -42,6 +42,20 @@ func (doc *Doc) CreateBookmarkWithID(ctx context.Context, props *GenericBookmark
 		func(obj *GenericBookmark) string { return obj.GenericId }, doc.DestroyBookmark)
 }
 
+// CreateBookmarkExWithID is like CreateBookmarkEx but returns ErrIDTaken when props.Info.Id is already taken.
+func (doc *Doc) CreateBookmarkExWithID(ctx context.Context, props *GenericBookmarkProperties, objectIdsToPatch []string) (*GenericBookmark, error) {
+	return createWithID(ctx, requestedID(props), func() (*GenericBookmark, error) { return doc.CreateBookmarkEx(ctx, props, objectIdsToPatch) },
+		func(obj *GenericBookmark) string { return obj.GenericId }, doc.DestroyBookmark)
+}
+
+// CreateChildWithID is like CreateChild but returns ErrIDTaken when props.Info.Id is already taken,
+// also by an object that isn't a child of obj. A duplicate child is removed without changing obj's properties.
+func (obj *GenericObject) CreateChildWithID(ctx context.Context, props *GenericObjectProperties, propForThis *GenericObjectProperties) (*GenericObject, error) {
+	return createWithID(ctx, requestedID(props), func() (*GenericObject, error) { return obj.CreateChild(ctx, props, propForThis) },
+		func(child *GenericObject) string { return child.GenericId },
+		func(ctx context.Context, id string) (bool, error) { return obj.DestroyChild(ctx, id, nil) })
+}
+
 func createWithID[T any](ctx context.Context, requested string, create func() (T, error), createdID func(T) string, destroy func(context.Context, string) (bool, error)) (T, error) {
 	var none T
 	obj, err := create()

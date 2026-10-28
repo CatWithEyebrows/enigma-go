@@ -135,6 +135,29 @@ func TestNilSlicesAreSentAsEmptyArrays(t *testing.T) {
 	assert.JSONEq(t, `["Sum(A)",[],false]`, string(sent))
 }
 
+func TestCreateChildWithIDTaken(t *testing.T) {
+	doc, calls := connectFakeEngine(t, func(method string, params []interface{}) string {
+		switch method {
+		case "GetObject":
+			return object(5, "parent")
+		case "CreateChild":
+			return object(6, "random-id")
+		}
+		return `{"qSuccess":true}`
+	})
+	ctx := context.Background()
+	parent, err := doc.GetObject(ctx, "parent")
+	require.NoError(t, err)
+	*calls = nil
+
+	child, err := parent.CreateChildWithID(ctx, &GenericObjectProperties{Info: &NxInfo{Id: "taken", Type: "child"}}, nil)
+	assert.Nil(t, child)
+	assert.ErrorIs(t, err, ErrIDTaken)
+	assert.Equal(t, []string{"CreateChild", "DestroyChild"}, methods(*calls))
+	sent, _ := json.Marshal(ensureAllEncodable((*calls)[1].params))
+	assert.JSONEq(t, `["random-id",null]`, string(sent), "the parent's properties are left alone")
+}
+
 func TestEngineBehaviorsIntegration(t *testing.T) {
 	doc := connectSessionApp(t)
 	ctx := context.Background()
@@ -179,6 +202,33 @@ func TestEngineBehaviorsIntegration(t *testing.T) {
 		duplicate, err := doc.CreateObject(ctx, object)
 		require.NoError(t, err)
 		assert.NotEqual(t, "obj-1", duplicate.GenericId)
+
+		bookmark := &GenericBookmarkProperties{Info: &NxInfo{Id: "bm-1", Type: "bookmark"}}
+		_, err = doc.CreateBookmarkExWithID(ctx, bookmark, nil)
+		require.NoError(t, err)
+		_, err = doc.CreateBookmarkExWithID(ctx, bookmark, nil)
+		assert.ErrorIs(t, err, ErrIDTaken)
+		bookmarks, err := doc.GetBookmarkList(ctx)
+		require.NoError(t, err)
+		require.Len(t, bookmarks, 1, "the duplicate is removed")
+
+		parent, err := doc.CreateObject(ctx, &GenericObjectProperties{Info: &NxInfo{Id: "parent-1", Type: "parent"}, ChildListDef: &ChildListDef{}})
+		require.NoError(t, err)
+		child := &GenericObjectProperties{Info: &NxInfo{Id: "child-1", Type: "child"}}
+		_, err = parent.CreateChildWithID(ctx, child, nil)
+		require.NoError(t, err)
+		_, err = parent.CreateChildWithID(ctx, child, nil)
+		assert.ErrorIs(t, err, ErrIDTaken)
+		// Ids are unique in the whole app, not only among a parent's children
+		_, err = parent.CreateChildWithID(ctx, &GenericObjectProperties{Info: &NxInfo{Id: "obj-1", Type: "child"}}, nil)
+		assert.ErrorIs(t, err, ErrIDTaken)
+		children, err := parent.GetChildInfos(ctx)
+		require.NoError(t, err)
+		require.Len(t, children, 1, "the duplicates are removed")
+		assert.Equal(t, "child-1", children[0].Id)
+		props, err := parent.GetProperties(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "parent", props.Info.Type, "the parent's properties are unchanged")
 	})
 
 	t.Run("missing qData paths", func(t *testing.T) {
