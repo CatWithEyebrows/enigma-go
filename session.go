@@ -19,8 +19,6 @@ type (
 		*sessionChangeLists
 		socket                   Socket
 		dialer                   *Dialer
-		isOpen                   bool
-		callIDSeq                int
 		outgoingMessages         chan []byte
 		disconnectedFromServerCh chan struct{}
 		interceptorChain         InterceptorContinuation
@@ -49,10 +47,6 @@ func (q *session) connect(ctx context.Context, url string, httpHeader http.Heade
 	// Start reader/writer loops
 	go q.mainSessionLoop()
 	return nil
-}
-
-func (q *session) currentSocket() Socket {
-	return q.socket
 }
 
 func convertToRawSliceIfNeeded(params []interface{}) interface{} {

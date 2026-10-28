@@ -364,15 +364,15 @@ func getRawOutputTypeName(t *Type) string {
 func cleanCommentString(comment string, indent string) (string, error) {
 
 	// Fix headings so they end up on a new line
-	comment = regexp.MustCompile("(?m)####([^\\n]*)$").ReplaceAllString(comment, "<br><br>$1:<br><br>")
-	comment = regexp.MustCompile("(?m)###([^\\n]*)$").ReplaceAllString(comment, "<br><br>$1:<br><br>")
-	comment = regexp.MustCompile("(?m)##([^\\n]*)$").ReplaceAllString(comment, "<br><br>$1:<br><br>")
-	comment = regexp.MustCompile("(?m)#([^\\n]*)$").ReplaceAllString(comment, "<br><br>$1:<br><br>")
-	comment = regexp.MustCompile("(?m)\\*\\*([^\\*]*)\\*\\*$").ReplaceAllString(comment, "<br><br>$1:<br><br>")
+	comment = regexp.MustCompile(`(?m)####([^\n]*)$`).ReplaceAllString(comment, "<br><br>$1:<br><br>")
+	comment = regexp.MustCompile(`(?m)###([^\n]*)$`).ReplaceAllString(comment, "<br><br>$1:<br><br>")
+	comment = regexp.MustCompile(`(?m)##([^\n]*)$`).ReplaceAllString(comment, "<br><br>$1:<br><br>")
+	comment = regexp.MustCompile(`(?m)#([^\n]*)$`).ReplaceAllString(comment, "<br><br>$1:<br><br>")
+	comment = regexp.MustCompile(`(?m)\*\*([^\*]*)\*\*$`).ReplaceAllString(comment, "<br><br>$1:<br><br>")
 
 	// Remove markdown
-	comment = regexp.MustCompile("(?m) \\*\\*([^\\*]*)\\*\\*").ReplaceAllString(comment, " $1")
-	comment = regexp.MustCompile("(?m) _([^_]*)_").ReplaceAllString(comment, " $1")
+	comment = regexp.MustCompile(`(?m) \*\*([^\*]*)\*\*`).ReplaceAllString(comment, " $1")
+	comment = regexp.MustCompile(`(?m) _([^_]*)_`).ReplaceAllString(comment, " $1")
 
 	comment = strings.Replace(comment, "\n", "<br>\n", -1)
 	comment, err := html2text.FromString(comment, html2text.Options{PrettyTables: true})
@@ -390,7 +390,7 @@ func formatComment(indent string, description string, parameters []*Type) string
 		fmt.Println(err)
 	}
 	comment := "" + indent + "// " + description
-	if parameters != nil && len(parameters) > 0 && parameters[0].Description != "" {
+	if len(parameters) > 0 && parameters[0].Description != "" {
 		comment = comment + "\n" + indent + "//" + "\n" + indent + "// Parameters:" + "\n//"
 		longestParamNameLen := 0
 		for _, param := range parameters {

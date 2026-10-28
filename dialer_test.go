@@ -88,6 +88,7 @@ func TestFullRpcScenario(t *testing.T) {
 	// Check the OnConnected information
 	sessionState, err := global.SessionState(ctx)
 
+	assert.NoError(t, err)
 	assert.Equal(t, "SESSION_CREATED", sessionState)
 
 	// Continue with opening the doc
