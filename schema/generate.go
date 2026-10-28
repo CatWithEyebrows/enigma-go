@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -487,22 +488,219 @@ func wrapWithEnigmaStandardTypesPrefix(str string) string {
 	return str
 }
 
+// methodVariant holds the parameters of a generated method. Methods keep the parameters
+// they had when first generated, see frozen-params.json. Parameters added to the spec later
+// are options of a <Method>WithOptions variant, so regenerating never breaks callers.
+type methodVariant struct {
+	params  []*Type
+	options []*Type
+}
+
+func (v methodVariant) suffix() string {
+	if len(v.options) > 0 {
+		return "WithOptions"
+	}
+	return ""
+}
+
+func optionsStructName(serviceName, methodName string, raw bool) string {
+	if raw {
+		methodName += "Raw"
+	}
+	return serviceName + methodName + "Options"
+}
+
+// isNilable reports whether nil can be used as "not set" for a value of the type
+func isNilable(typeName string) bool {
+	return strings.HasPrefix(typeName, "*") || strings.HasPrefix(typeName, "[]") ||
+		typeName == "json.RawMessage" || typeName == "any" || typesMap[typeName] == "array"
+}
+
+// emptyValue returns a Go expression for an empty value of a nilable type, encoded as [] or {}
+func emptyValue(typeName string) string {
+	switch {
+	case strings.HasPrefix(typeName, "[]") || typesMap[typeName] == "array":
+		return typeName + "{}"
+	case strings.HasPrefix(typeName, "*"):
+		return "&" + typeName[1:] + "{}"
+	default:
+		return "json.RawMessage(\"{}\")"
+	}
+}
+
+func optionTypeName(option *Type, raw bool) string {
+	if raw {
+		return getRawInputTypeName(option)
+	}
+	return getTypeName(option)
+}
+
+func printOptionsStruct(out *os.File, serviceName, methodName string, options []*Type, raw bool) {
+	name := serviceName + methodName + "Options"
+	fmt.Fprintln(out, "// "+name+" holds optional parameters of "+serviceName+"."+methodName+"WithOptions.")
+	fmt.Fprintln(out, "// Options left nil are not sent and the engine uses their default values.")
+	fmt.Fprintln(out, "type", name, "struct {")
+	for _, option := range options {
+		if option.Description != "" {
+			fmt.Fprintln(out, formatComment("\t", option.Description, nil))
+		}
+		typeName := optionTypeName(option, raw)
+		if !isNilable(typeName) {
+			typeName = "*" + typeName
+		}
+		fmt.Fprintln(out, "\t"+toPublicMemberName(option.Name), typeName)
+	}
+	fmt.Fprintln(out, "}")
+	fmt.Fprintln(out, "")
+}
+
+// printRPCCall prints the call down to the RPC machinery. WithOptions variants append the options that are set.
+func printRPCCall(out *os.File, methodName string, resultParamName string, variant methodVariant, raw bool) {
+	if len(variant.options) == 0 {
+		fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName)
+		for _, param := range variant.params {
+			// Fill in the parameters in the parameter array
+			fmt.Fprint(out, ", ", toParamName(param.Name))
+		}
+		fmt.Fprintln(out, ")")
+		return
+	}
+	fmt.Fprint(out, "\tparams := []interface{}{")
+	for i, param := range variant.params {
+		if i > 0 {
+			fmt.Fprint(out, ", ")
+		}
+		fmt.Fprint(out, toParamName(param.Name))
+	}
+	fmt.Fprintln(out, "}")
+	fmt.Fprintln(out, "\tif opts != nil {")
+	fmt.Fprint(out, "\t\tparams = appendOptionalParams(params")
+	for _, option := range variant.options {
+		field := "opts." + toPublicMemberName(option.Name)
+		if isNilable(optionTypeName(option, raw)) {
+			// The engine rejects null, so unset options before a set one are sent as an empty value
+			fmt.Fprint(out, ", optionalRef(", field, " != nil, ", field, ", ", emptyValue(getTypeName(option)), ")")
+		} else {
+			fmt.Fprint(out, ", optionalValue(", field, ")")
+		}
+	}
+	fmt.Fprintln(out, ")")
+	fmt.Fprintln(out, "\t}")
+	fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName, ", params...)\n")
+}
+
+// optionalParamsHelpers is added to the generated file when at least one method has options
+const optionalParamsHelpers = `// optionalParam is a parameter of a WithOptions method that is only sent when set.
+type optionalParam struct {
+	set   bool
+	value interface{}
+}
+
+// optionalValue returns an optionalParam that is set when v is not nil.
+func optionalValue[T any](v *T) optionalParam {
+	if v == nil {
+		var zero T
+		return optionalParam{value: zero}
+	}
+	return optionalParam{set: true, value: *v}
+}
+
+// optionalRef returns an optionalParam that is set when set is true and holds empty otherwise.
+func optionalRef(set bool, value, empty interface{}) optionalParam {
+	if !set {
+		return optionalParam{value: empty}
+	}
+	return optionalParam{set: true, value: value}
+}
+
+// appendOptionalParams appends the optional parameters up to the last one that is set,
+// so the engine uses its defaults for the rest. Unset parameters before a set one are
+// sent as their zero or empty value.
+func appendOptionalParams(params []interface{}, optional ...optionalParam) []interface{} {
+	last := -1
+	for i, p := range optional {
+		if p.set {
+			last = i
+		}
+	}
+	for _, p := range optional[:last+1] {
+		params = append(params, p.value)
+	}
+	return params
+}
+
+`
+
+// loadFrozenParams reads the number of parameters each method was first generated with.
+// A missing file means no method is frozen yet.
+func loadFrozenParams(path string) (map[string]int, error) {
+	frozen := map[string]int{}
+	file, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return frozen, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(file, &frozen); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	return frozen, nil
+}
+
+func saveFrozenParams(path string, frozen map[string]int) error {
+	data, err := json.MarshalIndent(frozen, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, append(data, '\n'), 0644)
+}
+
+// updateFrozenParams freezes new methods with all their parameters, drops methods that are
+// no longer in the spec and reports whether any method has parameters beyond its frozen ones.
+func updateFrozenParams(frozen map[string]int, methods []*OpenRpcMethod) bool {
+	inSpec := make(map[string]bool, len(methods))
+	hasOptions := false
+	for _, method := range methods {
+		inSpec[method.Name] = true
+		count, ok := frozen[method.Name]
+		switch {
+		case !ok:
+			frozen[method.Name] = len(method.Parameters)
+		case count > len(method.Parameters):
+			fmt.Printf("%s has fewer parameters than before (%d -> %d), its signature changes\n", method.Name, count, len(method.Parameters))
+			frozen[method.Name] = len(method.Parameters)
+		case count < len(method.Parameters):
+			hasOptions = true
+		}
+	}
+	for name := range frozen {
+		if !inSpec[name] {
+			delete(frozen, name)
+		}
+	}
+	return hasOptions
+}
+
 // Generate an ordinary fully typed method
-func printMethod(method *OpenRpcMethod, out *os.File, serviceName string, methodName string, objectFuncToObject map[string]string) {
+func printMethod(method *OpenRpcMethod, out *os.File, serviceName string, methodName string, objectFuncToObject map[string]string, variant methodVariant) {
 	responseMap := getPropertiesWithoutFilteredNxInfo(method.Responses.Schema.Properties, methodName)
 	sortedResponseKeys := getOriginalOrderSortedKeys(responseMap)
 	actualResponseMap := getPropertiesWithoutRedundantResponses(responseMap, methodName)
 	sortedActualResponseKeys := getOriginalOrderSortedKeys(actualResponseMap)
 	// Generate Description
 	if method.Description != "" {
-		fmt.Fprintln(out, formatComment("", method.Description, method.Parameters))
+		fmt.Fprintln(out, formatComment("", method.Description, variant.params))
 	}
 	printExtensionTags(out, "", method.QlikExtensions)
-	fmt.Fprint(out, "func (obj *", serviceName, ") ", methodName, "(ctx context.Context")
+	fmt.Fprint(out, "func (obj *", serviceName, ") ", methodName, variant.suffix(), "(ctx context.Context")
 
 	// Generate Parameters
-	for _, param := range method.Parameters {
+	for _, param := range variant.params {
 		fmt.Fprint(out, ", ", "", toParamName(param.Name), " ", getTypeName(param))
+	}
+	if len(variant.options) > 0 {
+		fmt.Fprint(out, ", opts *", optionsStructName(serviceName, methodName, false))
 	}
 	fmt.Fprint(out, ") ")
 
@@ -551,12 +749,7 @@ func printMethod(method *OpenRpcMethod, out *os.File, serviceName string, method
 	}
 
 	// Generate the actual call down to the RPC machinery
-	fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName)
-	for _, param := range method.Parameters {
-		// Fill in the parameters in the parameter array
-		fmt.Fprint(out, ", ", toParamName(param.Name))
-	}
-	fmt.Fprintln(out, ")")
+	printRPCCall(out, methodName, resultParamName, variant, false)
 
 	// If there is at least one Remote Object that will be created then check for nil and return early
 	if atLeastOneObjectInterface(method) {
@@ -593,7 +786,7 @@ func printMethod(method *OpenRpcMethod, out *os.File, serviceName string, method
 }
 
 // Generate a raw method that allows raw json input and output
-func printRawMethod(method *OpenRpcMethod, out *os.File, serviceName string, methodName string, objectFuncToObject map[string]string) {
+func printRawMethod(method *OpenRpcMethod, out *os.File, serviceName string, methodName string, objectFuncToObject map[string]string, variant methodVariant) {
 	responseMap := getPropertiesWithoutFilteredNxInfo(method.Responses.Schema.Properties, methodName)
 	sortedResponseKeys := getOriginalOrderSortedKeys(responseMap)
 	actualResponseMap := getPropertiesWithoutRedundantResponses(responseMap, methodName)
@@ -601,14 +794,17 @@ func printRawMethod(method *OpenRpcMethod, out *os.File, serviceName string, met
 
 	// Generate Description
 	if method.Description != "" {
-		fmt.Fprintln(out, formatComment("", method.Description, method.Parameters))
+		fmt.Fprintln(out, formatComment("", method.Description, variant.params))
 	}
 	printExtensionTags(out, "", method.QlikExtensions)
-	fmt.Fprint(out, "func (obj *", serviceName, ") ", methodName, "Raw(ctx context.Context")
+	fmt.Fprint(out, "func (obj *", serviceName, ") ", methodName, "Raw", variant.suffix(), "(ctx context.Context")
 
 	// Generate Parameters
-	for _, param := range method.Parameters {
+	for _, param := range variant.params {
 		fmt.Fprint(out, ", ", "", toParamName(param.Name), " ", getRawInputTypeName(param))
+	}
+	if len(variant.options) > 0 {
+		fmt.Fprint(out, ", opts *", optionsStructName(serviceName, methodName, true))
 	}
 	fmt.Fprint(out, ")")
 
@@ -654,11 +850,7 @@ func printRawMethod(method *OpenRpcMethod, out *os.File, serviceName string, met
 	}
 
 	// Generate the actual call down to the RPC machinery
-	fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName)
-	for _, param := range method.Parameters {
-		fmt.Fprint(out, ", ", toParamName(param.Name))
-	}
-	fmt.Fprintln(out, ")")
+	printRPCCall(out, methodName, resultParamName, variant, true)
 
 	// If there is at least one Remote Object that will be created then check for nil and return early
 	if atLeastOneObjectInterface(method) {
@@ -752,18 +944,22 @@ func getExtraCrossAssignmentLine(methodName string) string {
 func main() {
 
 	if len(os.Args) < 5 {
-		fmt.Println("Usage: go run schema/generate.go <file path to spec.json> <file path to generated file.go> <generated package name>")
+		fmt.Println("Usage: go run schema/generate.go <file path to spec.json> <file path to schema-companion.json> <file path to generated file.go> <generated package name> [disable-enigma-import]")
 		os.Exit(1)
 	}
-	schemaFilePath := os.Args[1]
-	schemaCompanionFilePath := os.Args[2]
-	generatedFilePath := os.Args[3]
-	generatedFilePackage := os.Args[4]
+	// The fifth argument disable-enigma-import is used to indicate that we are genering the standard
+	// schema file inside of enigma-go and not an external one.
+	internal := len(os.Args) > 5 && os.Args[5] == "disable-enigma-import"
+	if err := generate(os.Args[1], os.Args[2], os.Args[3], os.Args[4], internal); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+}
+
+func generate(schemaFilePath, schemaCompanionFilePath, generatedFilePath, generatedFilePackage string, internal bool) error {
 	enigmaImports := ""
 	enigmaStandardTypesPrefix = ""
-	// The fourth argument disable-enigma-import is used to indicate that we are genering the standard
-	// schema file inside of enigma-go and not an external one.
-	if !(len(os.Args) > 5 && os.Args[5] == "disable-enigma-import") {
+	if !internal {
 		enigmaImports = "\t\"github.com/CatWithEyebrows/enigma-go/v4\"\n"
 		enigmaStandardTypesPrefix = "enigma."
 	}
@@ -771,15 +967,23 @@ func main() {
 	objectFuncToObject := createObjectFunctionToObjectTypeMapping(schemaCompanionFilePath)
 	schemaFile, err := loadSchemaFile(schemaFilePath)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return err
+	}
+
+	frozenParamsFilePath := filepath.Join(filepath.Dir(schemaCompanionFilePath), "frozen-params.json")
+	frozenParams, err := loadFrozenParams(frozenParamsFilePath)
+	if err != nil {
+		return err
+	}
+	needsOptionalParams := updateFrozenParams(frozenParams, schemaFile.Methods)
+	if err := saveFrozenParams(frozenParamsFilePath, frozenParams); err != nil {
+		return err
 	}
 
 	// Start generating the go file
 	out, err := os.Create(generatedFilePath)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return err
 	}
 	defer out.Close()
 
@@ -793,6 +997,9 @@ func main() {
 	fmt.Fprint(out, ")\n\n")
 	fmt.Fprintln(out, "// Version of the schema used to generate the enigma.go QIX API")
 	fmt.Fprintf(out, "const QIX_SCHEMA_VERSION = \"%s\"\n\n", schemaFile.Info.Version)
+	if needsOptionalParams {
+		fmt.Fprint(out, optionalParamsHelpers)
+	}
 
 	// Generate definition data type structs
 	definitionKeys := getAlphabeticSortedKeys(schemaFile.Components.Schemas)
@@ -867,16 +1074,30 @@ func main() {
 				patchMissingTypeInfo(par, key.Key, methodName)
 			}
 
+			// Parameters after the frozen ones go into a <Method>WithOptions variant
+			frozen := frozenParams[method.Name]
+			base := methodVariant{params: method.Parameters[:frozen]}
+			withOptions := methodVariant{params: method.Parameters[:frozen], options: method.Parameters[frozen:]}
+
 			// Generate typed methods
-			printMethod(method, out, serviceName, methodName, objectFuncToObject)
+			printMethod(method, out, serviceName, methodName, objectFuncToObject, base)
+			if len(withOptions.options) > 0 {
+				printOptionsStruct(out, serviceName, methodName, withOptions.options, false)
+				printMethod(method, out, serviceName, methodName, objectFuncToObject, withOptions)
+			}
 
 			// Generate untyped (raw) methods for those with complex parameters and/or return values
 			actualResponses := getPropertiesWithoutFilteredNxInfo(method.Responses.Schema.Properties, methodName)
 			if !(allTypesBuiltIn(method.Parameters) && allTypesBuiltInMap(actualResponses)) {
-				printRawMethod(method, out, serviceName, methodName, objectFuncToObject)
+				printRawMethod(method, out, serviceName, methodName, objectFuncToObject, base)
+				if len(withOptions.options) > 0 {
+					printOptionsStruct(out, serviceName, methodName+"Raw", withOptions.options, true)
+					printRawMethod(method, out, serviceName, methodName, objectFuncToObject, withOptions)
+				}
 			}
 		}
 	}
+	return nil
 }
 
 func printStructMember(propertyName string, property *Type, out *os.File) {
