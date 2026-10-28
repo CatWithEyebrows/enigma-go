@@ -15,6 +15,8 @@ type (
 		mutex           sync.Mutex
 		changedChannels map[chan struct{}]bool
 		closedCh        chan struct{}
+		// undo group state when this is the UndoInfo session object, see UndoInfoObject
+		undoGroups *undoGroupState
 	}
 )
 
