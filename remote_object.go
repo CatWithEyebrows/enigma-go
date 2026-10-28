@@ -17,6 +17,8 @@ type (
 		closedCh        chan struct{}
 		// undo group state when this is the UndoInfo session object, see UndoInfoObject
 		undoGroups *undoGroupState
+		// modal selection state when this is a Doc, see Doc.ModalSelection
+		modalSelection *ModalSelection
 	}
 )
 
