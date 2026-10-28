@@ -18,12 +18,8 @@ func (doc *Doc) GetOrCreateSessionObject(ctx context.Context, props *GenericObje
 	}
 	id := props.Info.Id
 	obj, err := doc.GetObject(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	// The engine answers with an empty object, not an error, when the id doesn't exist
-	if obj.Type != "" {
-		return obj, nil
+	if !errors.Is(err, ErrObjectNotFound) {
+		return obj, err
 	}
 	obj, err = doc.CreateSessionObject(ctx, props)
 	if err != nil {

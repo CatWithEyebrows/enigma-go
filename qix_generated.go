@@ -7367,6 +7367,9 @@ func (obj *Doc) CreateBookmark(ctx context.Context, prop *GenericBookmarkPropert
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericBookmark{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7384,6 +7387,9 @@ func (obj *Doc) CreateBookmarkRaw(ctx context.Context, prop any) (*GenericBookma
 	err := obj.RPC(ctx, "CreateBookmark", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericBookmark{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7405,6 +7411,9 @@ func (obj *Doc) CreateBookmarkEx(ctx context.Context, prop *GenericBookmarkPrope
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericBookmark{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7424,6 +7433,9 @@ func (obj *Doc) CreateBookmarkExRaw(ctx context.Context, prop any, objectIdsToPa
 	err := obj.RPC(ctx, "CreateBookmarkEx", result, prop, objectIdsToPatch)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericBookmark{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7476,6 +7488,9 @@ func (obj *Doc) CreateDimension(ctx context.Context, prop *GenericDimensionPrope
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericDimension{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7494,6 +7509,9 @@ func (obj *Doc) CreateDimensionRaw(ctx context.Context, prop any) (*GenericDimen
 	err := obj.RPC(ctx, "CreateDimension", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericDimension{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7534,6 +7552,9 @@ func (obj *Doc) CreateMeasure(ctx context.Context, prop *GenericMeasurePropertie
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericMeasure{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7552,6 +7573,9 @@ func (obj *Doc) CreateMeasureRaw(ctx context.Context, prop any) (*GenericMeasure
 	err := obj.RPC(ctx, "CreateMeasure", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericMeasure{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7575,6 +7599,9 @@ func (obj *Doc) CreateObject(ctx context.Context, prop *GenericObjectProperties)
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7596,6 +7623,9 @@ func (obj *Doc) CreateObjectRaw(ctx context.Context, prop any) (*GenericObject, 
 	err := obj.RPC(ctx, "CreateObject", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7619,6 +7649,9 @@ func (obj *Doc) CreateSessionObject(ctx context.Context, prop *GenericObjectProp
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7640,6 +7673,9 @@ func (obj *Doc) CreateSessionObjectRaw(ctx context.Context, prop any) (*GenericO
 	err := obj.RPC(ctx, "CreateSessionObject", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7671,6 +7707,9 @@ func (obj *Doc) CreateSessionVariable(ctx context.Context, prop *GenericVariable
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7700,6 +7739,9 @@ func (obj *Doc) CreateSessionVariableRaw(ctx context.Context, prop any) (*Generi
 	err := obj.RPC(ctx, "CreateSessionVariable", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
@@ -7789,6 +7831,9 @@ func (obj *Doc) CreateVariableEx(ctx context.Context, prop *GenericVariablePrope
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -7820,6 +7865,9 @@ func (obj *Doc) CreateVariableExRaw(ctx context.Context, prop any) (*GenericVari
 	err := obj.RPC(ctx, "CreateVariableEx", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
@@ -8591,6 +8639,9 @@ func (obj *Doc) GetBookmark(ctx context.Context, id string) (*GenericBookmark, e
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericBookmark{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -8989,6 +9040,9 @@ func (obj *Doc) GetDimension(ctx context.Context, id string) (*GenericDimension,
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericDimension{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -9068,6 +9122,9 @@ func (obj *Doc) GetField(ctx context.Context, fieldName string, stateName string
 	err := obj.RPC(ctx, "GetField", result, fieldName, stateName)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &Field{obj.GetRemoteObject(result.Return)}, err
 }
@@ -9811,6 +9868,9 @@ func (obj *Doc) GetMeasure(ctx context.Context, id string) (*GenericMeasure, err
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericMeasure{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -9829,6 +9889,9 @@ func (obj *Doc) GetMeasureWithLabel(ctx context.Context, label string) (*Generic
 	err := obj.RPC(ctx, "GetMeasureWithLabel", result, label)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericMeasure{obj.GetRemoteObject(result.Return)}, err
 }
@@ -9871,6 +9934,9 @@ func (obj *Doc) GetObject(ctx context.Context, id string) (*GenericObject, error
 	err := obj.RPC(ctx, "GetObject", result, id)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -9926,6 +9992,9 @@ func (obj *Doc) GetOrCreateObject(ctx context.Context, prop *GenericObjectProper
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -9949,6 +10018,9 @@ func (obj *Doc) GetOrCreateObjectRaw(ctx context.Context, prop any) (*GenericObj
 	err := obj.RPC(ctx, "GetOrCreateObject", result, prop)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -10235,6 +10307,9 @@ func (obj *Doc) GetVariable(ctx context.Context, name string) (*GenericVariable,
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -10253,6 +10328,9 @@ func (obj *Doc) GetVariableById(ctx context.Context, id string) (*GenericVariabl
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -10270,6 +10348,9 @@ func (obj *Doc) GetVariableByName(ctx context.Context, name string) (*GenericVar
 	err := obj.RPC(ctx, "GetVariableByName", result, name)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericVariable{obj.GetRemoteObject(result.Return)}, err
 }
@@ -10601,6 +10682,9 @@ func (obj *Doc) ReplaceBookmark(ctx context.Context, id string, ignorePatches bo
 	err := obj.RPC(ctx, "ReplaceBookmark", result, id, ignorePatches, objectIdsToPatch)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericBookmark{obj.GetRemoteObject(result.Return)}, err
 }
@@ -12539,6 +12623,9 @@ func (obj *GenericObject) CreateChild(ctx context.Context, prop *GenericObjectPr
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -12562,6 +12649,9 @@ func (obj *GenericObject) CreateChildRaw(ctx context.Context, prop any, propForT
 	err := obj.RPC(ctx, "CreateChild", result, prop, propForThis)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -12864,6 +12954,9 @@ func (obj *GenericObject) GetChild(ctx context.Context, id string) (*GenericObje
 	err := obj.RPC(ctx, "GetChild", result, id)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -13762,6 +13855,9 @@ func (obj *GenericObject) GetParent(ctx context.Context) (*GenericObject, error)
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
 
@@ -13806,6 +13902,9 @@ func (obj *GenericObject) GetSnapshotObject(ctx context.Context) (*GenericObject
 	err := obj.RPC(ctx, "GetSnapshotObject", result)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &GenericObject{obj.GetRemoteObject(result.Return)}, err
 }
@@ -15024,6 +15123,9 @@ func (obj *Global) CreateDocEx(ctx context.Context, docName string, userName str
 	if err != nil {
 		return nil, err
 	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
+	}
 	result.Return.GenericId = result.DocId
 	return &Doc{obj.GetRemoteObject(result.Return)}, err
 }
@@ -15043,6 +15145,9 @@ func (obj *Global) CreateSessionApp(ctx context.Context) (*Doc, error) {
 	err := obj.RPC(ctx, "CreateSessionApp", result)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	result.Return.GenericId = result.SessionAppId
 	return &Doc{obj.GetRemoteObject(result.Return)}, err
@@ -15075,6 +15180,9 @@ func (obj *Global) CreateSessionAppFromApp(ctx context.Context, srcAppId string)
 	err := obj.RPC(ctx, "CreateSessionAppFromApp", result, srcAppId)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	result.Return.GenericId = result.SessionAppId
 	return &Doc{obj.GetRemoteObject(result.Return)}, err
@@ -15204,6 +15312,9 @@ func (obj *Global) GetActiveDoc(ctx context.Context) (*Doc, error) {
 	err := obj.RPC(ctx, "GetActiveDoc", result)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &Doc{obj.GetRemoteObject(result.Return)}, err
 }
@@ -16090,6 +16201,9 @@ func (obj *Global) OpenDoc(ctx context.Context, docName string, userName string,
 	err := obj.RPC(ctx, "OpenDoc", result, docName, userName, password, serial, noData)
 	if err != nil {
 		return nil, err
+	}
+	if result.Return == nil || result.Return.Type == "" {
+		return nil, ErrObjectNotFound
 	}
 	return &Doc{obj.GetRemoteObject(result.Return)}, err
 }

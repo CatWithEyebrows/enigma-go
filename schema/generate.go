@@ -682,6 +682,31 @@ func updateFrozenParams(frozen map[string]int, methods []*OpenRpcMethod) bool {
 	return hasOptions
 }
 
+// printObjectReturnChecks prints the early returns of a method that returns remote objects: when the call
+// fails, and when the engine answers with a null handle because the requested object doesn't exist.
+func printObjectReturnChecks(out *os.File, sortedResponseKeys []OrderAwareKey, responses map[OrderAwareKey]*Type, raw bool) {
+	zeroValues := ""
+	for _, responseKey := range sortedResponseKeys {
+		typeName := getTypeName(responses[responseKey])
+		if raw {
+			typeName = getRawOutputTypeName(responses[responseKey])
+		}
+		zeroValues += nilNameInEarlyReturnAfterError(typeName) + ", "
+	}
+	fmt.Fprintln(out, "\tif err != nil {")
+	fmt.Fprintln(out, "\t\treturn "+zeroValues+"err")
+	fmt.Fprintln(out, "\t}")
+	for _, responseKey := range sortedResponseKeys {
+		if getTypeName(responses[responseKey]) != "*ObjectInterface" {
+			continue
+		}
+		field := "result." + toPublicMemberName(responseKey.Key)
+		fmt.Fprintln(out, "\tif "+field+" == nil || "+field+".Type == \"\" {")
+		fmt.Fprintln(out, "\t\treturn "+zeroValues+enigmaStandardTypesPrefix+"ErrObjectNotFound")
+		fmt.Fprintln(out, "\t}")
+	}
+}
+
 // Generate an ordinary fully typed method
 func printMethod(method *OpenRpcMethod, out *os.File, serviceName string, methodName string, objectFuncToObject map[string]string, variant methodVariant) {
 	responseMap := getPropertiesWithoutFilteredNxInfo(method.Responses.Schema.Properties, methodName)
@@ -751,16 +776,9 @@ func printMethod(method *OpenRpcMethod, out *os.File, serviceName string, method
 	// Generate the actual call down to the RPC machinery
 	printRPCCall(out, methodName, resultParamName, variant, false)
 
-	// If there is at least one Remote Object that will be created then check for nil and return early
+	// If there is at least one Remote Object that will be created then return early on errors
 	if atLeastOneObjectInterface(method) {
-		fmt.Fprintln(out, "\tif err != nil {")
-		fmt.Fprint(out, "\t\treturn ")
-		for _, responseKey := range sortedActualResponseKeys {
-			responseType := actualResponseMap[responseKey]
-			fmt.Fprint(out, nilNameInEarlyReturnAfterError(getTypeName(responseType))+", ")
-		}
-		fmt.Fprintln(out, "err")
-		fmt.Fprintln(out, "\t}")
+		printObjectReturnChecks(out, sortedActualResponseKeys, actualResponseMap, false)
 	}
 
 	fmt.Fprint(out, getExtraCrossAssignmentLine(methodName))
@@ -852,16 +870,9 @@ func printRawMethod(method *OpenRpcMethod, out *os.File, serviceName string, met
 	// Generate the actual call down to the RPC machinery
 	printRPCCall(out, methodName, resultParamName, variant, true)
 
-	// If there is at least one Remote Object that will be created then check for nil and return early
+	// If there is at least one Remote Object that will be created then return early on errors
 	if atLeastOneObjectInterface(method) {
-		fmt.Fprintln(out, "\tif err != nil {")
-		fmt.Fprint(out, "\t\treturn ")
-		for _, response := range actualResponseMap {
-			// Fill in the parameters in the parameter array
-			fmt.Fprint(out, nilNameInEarlyReturnAfterError(response.Type)+", ")
-		}
-		fmt.Fprintln(out, "err")
-		fmt.Fprintln(out, "\t}")
+		printObjectReturnChecks(out, sortedActualResponseKeys, actualResponseMap, true)
 	}
 
 	fmt.Fprint(out, getExtraCrossAssignmentLine(methodName))

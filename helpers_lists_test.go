@@ -41,7 +41,8 @@ func methods(calls []fakeCall) []string {
 	return result
 }
 
-const emptyObject = `{"qReturn":{}}`
+// What the engine answers when asked for an object that doesn't exist
+const emptyObject = `{"qReturn":{"qType":null,"qHandle":null}}`
 
 func object(handle int, id string) string {
 	ret, _ := json.Marshal(map[string]interface{}{"qReturn": ObjectInterface{Type: "GenericObject", Handle: handle, GenericType: "SheetList", GenericId: id}})
