@@ -5,33 +5,19 @@ import (
 	"reflect"
 )
 
-// ensureEncodable prepares a parameter for sending. Byte arrays are sent as raw JSON. The engine rejects
-// null parameters with a JSON parse error, so nil slices, maps and struct pointers are sent as empty arrays
-// and objects instead.
+// ensureEncodable prepares a parameter for sending. Byte arrays are sent as raw JSON. Go encodes nil slices
+// as null, which the engine rejects for array parameters, so they are sent as empty arrays instead. Other
+// nil values are still sent as null, which optional object parameters such as qPropForThis rely on.
 func ensureEncodable(val interface{}) interface{} {
-	if v, ok := val.([]byte); ok {
-		val = json.RawMessage(v)
-	}
-	if raw, ok := val.(json.RawMessage); ok {
-		if len(raw) == 0 {
-			return json.RawMessage("{}")
-		}
-		return raw
+	switch v := val.(type) {
+	case []byte:
+		return json.RawMessage(v)
+	case json.RawMessage:
+		return v
 	}
 	value := reflect.ValueOf(val)
-	switch value.Kind() {
-	case reflect.Slice:
-		if value.IsNil() {
-			return reflect.MakeSlice(value.Type(), 0, 0).Interface()
-		}
-	case reflect.Map:
-		if value.IsNil() {
-			return reflect.MakeMap(value.Type()).Interface()
-		}
-	case reflect.Pointer:
-		if value.IsNil() && value.Type().Elem().Kind() == reflect.Struct {
-			return reflect.New(value.Type().Elem()).Interface()
-		}
+	if value.Kind() == reflect.Slice && value.IsNil() {
+		return reflect.MakeSlice(value.Type(), 0, 0).Interface()
 	}
 	return val
 }

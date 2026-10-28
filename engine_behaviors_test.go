@@ -101,7 +101,7 @@ func TestGetSessionListCustomList(t *testing.T) {
 	assert.Error(t, err, "props without a list definition")
 }
 
-func TestNilParamsAreNotSentAsNull(t *testing.T) {
+func TestNilSlicesAreSentAsEmptyArrays(t *testing.T) {
 	var nilBytes []byte
 	var nilAny any
 	cases := []struct {
@@ -110,16 +110,16 @@ func TestNilParamsAreNotSentAsNull(t *testing.T) {
 	}{
 		{[]string(nil), `[]`},
 		{[]*NxPage(nil), `[]`},
-		{map[string]int(nil), `{}`},
-		{(*NxPage)(nil), `{}`},
-		{json.RawMessage(nil), `{}`},
-		{nilBytes, `{}`},
+		// The engine accepts null for optional object parameters such as qPropForThis
+		{map[string]int(nil), `null`},
+		{(*NxPage)(nil), `null`},
+		{json.RawMessage(nil), `null`},
+		{nilBytes, `null`},
 		{[]byte(`{"a":1}`), `{"a":1}`},
 		{[]string{"a"}, `["a"]`},
 		{&NxPage{Top: 1}, `{"qTop":1}`},
 		{"", `""`},
 		{0, `0`},
-		// Untyped nil, e.g. from the Raw methods, has no type to make an empty value of
 		{nilAny, `null`},
 	}
 	for _, c := range cases {
@@ -225,10 +225,14 @@ func TestEngineBehaviorsIntegration(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Len(t, badFields, 1)
 
-		// A nil struct pointer is sent as {}, so the engine reports what is missing instead
-		_, err = doc.GetObjects(ctx, nil)
-		var qixErr Error
-		require.ErrorAs(t, err, &qixErr)
-		assert.NotEqual(t, "LOCERR_JSON_RPC_PARSE_ERROR", ErrorCodeLookup(qixErr.Code()))
+		// nil ids to patch need to be sent as [] as well
+		_, err = doc.CreateBookmarkEx(ctx, &GenericBookmarkProperties{Info: &NxInfo{Type: "bookmark"}}, nil)
+		assert.NoError(t, err)
+
+		// A nil qPropForThis has to stay null: the engine reads {} as properties replacing the parent's
+		parent, err := doc.CreateObject(ctx, &GenericObjectProperties{Info: &NxInfo{Type: "parent"}, ChildListDef: &ChildListDef{}})
+		require.NoError(t, err)
+		_, err = parent.CreateChild(ctx, &GenericObjectProperties{Info: &NxInfo{Type: "child"}}, nil)
+		assert.NoError(t, err)
 	})
 }
