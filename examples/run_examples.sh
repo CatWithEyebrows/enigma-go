@@ -9,6 +9,7 @@ examples=(
     basics/lists/app-object-list/app-object-list.go
     basics/lists/field-list/field-list.go
     basics/lists/variable-list/variable-list.go
+    basics/lists/helpers/helpers.go
     basics/events/events.go
     cookiejar/cookiejar.go
     data/hypercubes/pivot/hypercube-pivot.go

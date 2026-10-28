@@ -1,9 +1,15 @@
 package enigma
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
+
+// ErrObjectNotFound is returned by methods such as Doc.GetObject, Doc.GetField and Doc.GetVariableByName
+// when the app has no object with the given id or name. The engine doesn't treat that as an error and
+// answers with a null handle instead.
+var ErrObjectNotFound = errors.New("enigma: object not found")
 
 type (
 	// Error extends the built in error type with extra error information provided by the Qlik Associative Engine
