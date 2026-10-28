@@ -3,9 +3,9 @@
 This folder contains a script for generating enigma-go based on a specific version of Qlik Associative Engine.
 The Engine OpenRPC specification can be found in the schema folder [`./schema/engine-rpc.json`](./engine-rpc.json).
 
-If you want to manually generate a version of the Engine specification:
-- download the spec from https://qlik.dev/apis/json-rpc/qix and save it as `engine-rpc.json` in the `./schema` folder
-- run:
+To generate enigma-go from the latest published Engine specification, run:
 ```sh
 ./schema/generate.sh
 ```
+The script downloads the spec from https://qlik.dev/specs/json-rpc/qix.json into `./schema/engine-rpc.json`
+and regenerates `qix_generated.go` if it differs from `origin/master`. Set `QIX_SPEC_URL` to use another source.

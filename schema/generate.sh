@@ -2,16 +2,18 @@
 
 ## compares engine spec with master
 
+## the public spec on qlik.dev, override with QIX_SPEC_URL
+QIX_SPEC_URL=${QIX_SPEC_URL:-https://qlik.dev/specs/json-rpc/qix.json}
+
 generate() {
-  if [[ $QCS_HOST == "" ]]; then
-    echo "QCS_HOST not set"
+  local tmp
+  tmp=$(mktemp)
+  if ! curl -sSf "$QIX_SPEC_URL" | jq . > "$tmp" || ! jq -e '.info.version and (.methods | length > 0)' "$tmp" >/dev/null; then
+    echo "Failed to download a valid spec from $QIX_SPEC_URL"
+    rm -f "$tmp"
     return 1
   fi
-  if [[ $QCS_API_KEY  == "" ]]; then
-    echo "QCS_API_KEY not set"
-    return 1
-  fi
-  curl -s -H "Authorization: Bearer $QCS_API_KEY" https://$QCS_HOST/api/engine/openrpc | jq > ./schema/engine-rpc.json
+  mv "$tmp" ./schema/engine-rpc.json
   git diff --exit-code origin/master -- ./schema/engine-rpc.json >/dev/null
   if [[ $? -ne 0 ]]; then
     ENGINE_VERSION=$(cat ./schema/engine-rpc.json | jq -r '.info.version')
