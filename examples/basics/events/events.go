@@ -20,7 +20,6 @@ func main() {
 
 	const script = "TempTable: Load RecNo() as ID, Rand() as Value AutoGenerate 1000000"
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(2)
 	// Connect to Qlik Cloud tenant and create a session document:
@@ -78,7 +77,7 @@ func main() {
 	layout, _ := object.GetLayout(ctx)
 
 	HyperCubeDataPagesAsJSON, _ := json.MarshalIndent(layout.HyperCube.DataPages, "", "  ")
-	fmt.Println(fmt.Sprintf("Initial hypercube layout: %s", HyperCubeDataPagesAsJSON))
+	fmt.Printf("Initial hypercube layout: %s\n", HyperCubeDataPagesAsJSON)
 
 	// Fetch additional layout changes in a separate goroutine by listening for change events
 	go func() {
@@ -152,5 +151,5 @@ func fetchAndPrintLayout(ctx context.Context, object *enigma.GenericObject) {
 		return
 	}
 	HyperCubeDataPagesAsJSON, _ := json.MarshalIndent(layout.HyperCube.DataPages, "", "  ")
-	fmt.Println(fmt.Sprintf("Changed hypercube layout: %s", HyperCubeDataPagesAsJSON))
+	fmt.Printf("Changed hypercube layout: %s\n", HyperCubeDataPagesAsJSON)
 }

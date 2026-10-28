@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -28,7 +27,6 @@ func main() {
 
 	// Connect to Qlik Cloud tenant and create a session document:
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	global, _ := enigma.Dialer{}.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", qcsApiKey)},
 	})
@@ -70,7 +68,7 @@ func main() {
 
 	HyperCubeDataPagesAsJSON, _ := json.MarshalIndent(data, "", "  ")
 
-	fmt.Println(fmt.Sprintf("Hypercube data pages: %s", HyperCubeDataPagesAsJSON))
+	fmt.Printf("Hypercube data pages: %s\n", HyperCubeDataPagesAsJSON)
 	// Select second value in the first column of the data matrix
 	object.SelectPivotCells(ctx, "/qHyperCubeDef", []*enigma.NxSelectionCell{{
 		Type: "D",
@@ -87,7 +85,7 @@ func main() {
 
 	HyperCubeDataPagesAsJSON, _ = json.MarshalIndent(data, "", "  ")
 
-	fmt.Println(fmt.Sprintf("Hypercube data pages after selection: %s", HyperCubeDataPagesAsJSON))
+	fmt.Printf("Hypercube data pages after selection: %s\n", HyperCubeDataPagesAsJSON)
 	// Close the session
 	global.DisconnectFromServer()
 

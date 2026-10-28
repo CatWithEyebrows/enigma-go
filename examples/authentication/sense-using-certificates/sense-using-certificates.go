@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -39,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	caCert, err := ioutil.ReadFile(caFile)
+	caCert, err := os.ReadFile(caFile)
 	if err != nil {
 		fmt.Println("Failed to read root certificate", err)
 		panic(err)
@@ -68,5 +68,5 @@ func main() {
 	}
 	version, _ := global.EngineVersion(ctx)
 	global.DisconnectFromServer()
-	fmt.Println(fmt.Sprintf("Connected to engine version %s.", version.ComponentVersion))
+	fmt.Printf("Connected to engine version %s.\n", version.ComponentVersion)
 }

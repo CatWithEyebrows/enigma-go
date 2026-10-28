@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -43,7 +42,6 @@ func runScenarioWithDialer(dialer *enigma.Dialer) {
 
 	// Connect to Qlik Cloud tenant and create a session document:
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	global, _ := dialer.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", qcsApiKey)},
 	})
@@ -78,7 +76,7 @@ func runScenarioWithDialer(dialer *enigma.Dialer) {
 
 	HyperCubeDataPagesAsJSON, _ := json.MarshalIndent(layout.HyperCube.DataPages, "", "  ")
 
-	fmt.Println(fmt.Sprintf("Hypercube data pages: %s", HyperCubeDataPagesAsJSON))
+	fmt.Printf("Hypercube data pages: %s\n", HyperCubeDataPagesAsJSON)
 	// Select cells at position 0, 2 and 4 in the dimension.
 	object.SelectHyperCubeCells(ctx, "/qHyperCubeDef", []int{0, 2, 4}, []int{0}, false, false)
 	// Get layout and view the selected values
@@ -86,7 +84,7 @@ func runScenarioWithDialer(dialer *enigma.Dialer) {
 	layout, _ = object.GetLayout(ctx)
 
 	HyperCubeDataPagesAsJSON, _ = json.MarshalIndent(layout.HyperCube.DataPages, "", "  ")
-	fmt.Println(fmt.Sprintf("Hypercube data pages after selection: %s", HyperCubeDataPagesAsJSON))
+	fmt.Printf("Hypercube data pages after selection: %s\n", HyperCubeDataPagesAsJSON)
 	// Close the session
 	global.DisconnectFromServer()
 

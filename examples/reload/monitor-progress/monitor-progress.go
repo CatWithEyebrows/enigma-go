@@ -18,7 +18,6 @@ func main() {
 	qcsApiKey := os.Getenv("QCS_API_KEY")
 
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 
 	// Connect to Qlik Cloud tenant and create a session document:
 	global, err := enigma.Dialer{}.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
@@ -128,7 +127,7 @@ func main() {
 					}},
 				}},
 			},
-			InitialDataFetch: []*enigma.NxPage{{0, 0, 10, 10}},
+			InitialDataFetch: []*enigma.NxPage{{Left: 0, Top: 0, Width: 10, Height: 10}},
 		},
 	})
 	if err != nil {
@@ -136,6 +135,9 @@ func main() {
 		panic(err)
 	}
 	layout, err := object.GetLayout(ctx)
+	if err != nil {
+		panic(err)
+	}
 	cell := layout.HyperCube.DataPages[0].Matrix[1][0]
 	fmt.Println(cell.Text)
 	// Output: B

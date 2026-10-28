@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -35,7 +34,6 @@ func main() {
 
 	// Connect to Qlik Cloud tenant
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	global, err := enigma.Dialer{}.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", qcsApiKey)},
 	})
@@ -69,7 +67,7 @@ func main() {
 
 	// Read properties back and print the custom property value
 	fetchedProperties, _ := object.GetCustomProperties(ctx)
-	fmt.Println(fmt.Sprintf("CustomProperty value is: %s", fetchedProperties.CustomProperty))
+	fmt.Printf("CustomProperty value is: %s\n", fetchedProperties.CustomProperty)
 
 	global.DisconnectFromServer()
 }
@@ -84,6 +82,9 @@ func (c *customDoc) CreateCustomObject(ctx context.Context, properties *customOb
 
 func (c *customObject) GetCustomProperties(ctx context.Context) (*customObjectProperties, error) {
 	rawProperties, err := c.GetPropertiesRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
 	properties := &customObjectProperties{}
 	err = json.Unmarshal(rawProperties, properties)
 	if err != nil {
