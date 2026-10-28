@@ -58,7 +58,14 @@ func (list *SessionList[T]) Items(ctx context.Context) ([]T, error) {
 	return content.Items, nil
 }
 
-func getListObject[T any](ctx context.Context, doc *Doc, layoutKey string, props *GenericObjectProperties) (*SessionList[T], error) {
+// GetSessionList returns a session list for the list definition in props, such as an AppObjectListDef
+// for your own object type, and creates the session object if needed. T is the type of the list's items,
+// for example *ListItem[MyData] for app object lists. ListItem reads qData with UnmarshalListData.
+func GetSessionList[T any](ctx context.Context, doc *Doc, props *GenericObjectProperties) (*SessionList[T], error) {
+	layoutKey, err := listLayoutKey(props)
+	if err != nil {
+		return nil, err
+	}
 	obj, err := doc.GetOrCreateSessionObject(ctx, props)
 	if err != nil {
 		return nil, err
@@ -66,8 +73,34 @@ func getListObject[T any](ctx context.Context, doc *Doc, layoutKey string, props
 	return &SessionList[T]{GenericObject: obj, layoutKey: layoutKey}, nil
 }
 
-func getListItems[T any](ctx context.Context, doc *Doc, layoutKey string, props *GenericObjectProperties) ([]T, error) {
-	list, err := getListObject[T](ctx, doc, layoutKey, props)
+// listLayoutKey returns the layout property holding the list defined in props
+func listLayoutKey(props *GenericObjectProperties) (string, error) {
+	switch {
+	case props == nil:
+	case props.AppObjectListDef != nil:
+		return "qAppObjectList", nil
+	case props.BookmarkListDef != nil:
+		return "qBookmarkList", nil
+	case props.ChildListDef != nil:
+		return "qChildList", nil
+	case props.DimensionListDef != nil:
+		return "qDimensionList", nil
+	case props.ExtensionListDef != nil:
+		return "qExtensionList", nil
+	case props.FieldListDef != nil:
+		return "qFieldList", nil
+	case props.MeasureListDef != nil:
+		return "qMeasureList", nil
+	case props.MediaListDef != nil:
+		return "qMediaList", nil
+	case props.VariableListDef != nil:
+		return "qVariableList", nil
+	}
+	return "", errors.New("enigma: GetSessionList needs a list definition such as props.AppObjectListDef")
+}
+
+func getListItems[T any](ctx context.Context, doc *Doc, props *GenericObjectProperties) ([]T, error) {
+	list, err := GetSessionList[T](ctx, doc, props)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +117,7 @@ type ListItem[T any] struct {
 	Data T               `json:"qData"`
 }
 
-// UnmarshalJSON implements json.Unmarshaler, see unmarshalListData for how Data is read.
+// UnmarshalJSON implements json.Unmarshaler, see UnmarshalListData for how Data is read.
 func (item *ListItem[T]) UnmarshalJSON(data []byte) error {
 	var raw struct {
 		Info *NxInfo         `json:"qInfo"`
@@ -95,12 +128,14 @@ func (item *ListItem[T]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	item.Info, item.Meta = raw.Info, raw.Meta
-	return unmarshalListData(raw.Data, &item.Data)
+	return UnmarshalListData(raw.Data, &item.Data)
 }
 
-// unmarshalListData reads a list item's qData into v. The engine returns "" for paths that don't
-// exist in an object, whatever type the value would have, so those values are left as zero values.
-func unmarshalListData(data json.RawMessage, v any) error {
+// UnmarshalListData reads the qData of a list item into v, for example from the items of a custom
+// list or from Doc.GetObjects. The engine returns "" for qData paths that don't exist in an object,
+// whatever type the value would have, so UnmarshalListData leaves those values as zero values
+// instead of failing to decode them.
+func UnmarshalListData(data json.RawMessage, v any) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -188,7 +223,7 @@ func fieldListProps(id string, showHidden, definitionOnly bool) *GenericObjectPr
 }
 
 func (doc *Doc) getFieldListObject(ctx context.Context, props *GenericObjectProperties) (*FieldListObject, error) {
-	list, err := getListObject[*FieldListItem](ctx, doc, "qFieldList", props)
+	list, err := GetSessionList[*FieldListItem](ctx, doc, props)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +232,7 @@ func (doc *Doc) getFieldListObject(ctx context.Context, props *GenericObjectProp
 
 // GetFieldList returns the app's fields, including the tables they are in and their derived fields.
 func (doc *Doc) GetFieldList(ctx context.Context) ([]*FieldListItem, error) {
-	return getListItems[*FieldListItem](ctx, doc, "qFieldList", fieldListProps("FieldList", false, false))
+	return getListItems[*FieldListItem](ctx, doc, fieldListProps("FieldList", false, false))
 }
 
 // GetFieldListObject returns the session object holding the app's field list.
@@ -241,12 +276,12 @@ func dimensionListProps() *GenericObjectProperties {
 
 // GetDimensionList returns the app's master dimensions.
 func (doc *Doc) GetDimensionList(ctx context.Context) ([]*DimensionListItem, error) {
-	return getListItems[*DimensionListItem](ctx, doc, "qDimensionList", dimensionListProps())
+	return getListItems[*DimensionListItem](ctx, doc, dimensionListProps())
 }
 
 // GetDimensionListObject returns the session object holding the app's master dimensions.
 func (doc *Doc) GetDimensionListObject(ctx context.Context) (*SessionList[*DimensionListItem], error) {
-	return getListObject[*DimensionListItem](ctx, doc, "qDimensionList", dimensionListProps())
+	return GetSessionList[*DimensionListItem](ctx, doc, dimensionListProps())
 }
 
 // Measures
@@ -273,12 +308,12 @@ func measureListProps() *GenericObjectProperties {
 
 // GetMeasureList returns the app's master measures.
 func (doc *Doc) GetMeasureList(ctx context.Context) ([]*MeasureListItem, error) {
-	return getListItems[*MeasureListItem](ctx, doc, "qMeasureList", measureListProps())
+	return getListItems[*MeasureListItem](ctx, doc, measureListProps())
 }
 
 // GetMeasureListObject returns the session object holding the app's master measures.
 func (doc *Doc) GetMeasureListObject(ctx context.Context) (*SessionList[*MeasureListItem], error) {
-	return getListObject[*MeasureListItem](ctx, doc, "qMeasureList", measureListProps())
+	return GetSessionList[*MeasureListItem](ctx, doc, measureListProps())
 }
 
 // Master objects
@@ -306,12 +341,12 @@ func masterObjectListProps() *GenericObjectProperties {
 
 // GetMasterObjectList returns the app's master visualizations.
 func (doc *Doc) GetMasterObjectList(ctx context.Context) ([]*MasterObjectListItem, error) {
-	return getListItems[*MasterObjectListItem](ctx, doc, "qAppObjectList", masterObjectListProps())
+	return getListItems[*MasterObjectListItem](ctx, doc, masterObjectListProps())
 }
 
 // GetMasterObjectListObject returns the session object holding the app's master visualizations.
 func (doc *Doc) GetMasterObjectListObject(ctx context.Context) (*SessionList[*MasterObjectListItem], error) {
-	return getListObject[*MasterObjectListItem](ctx, doc, "qAppObjectList", masterObjectListProps())
+	return GetSessionList[*MasterObjectListItem](ctx, doc, masterObjectListProps())
 }
 
 // Variables
@@ -334,7 +369,7 @@ type VariableListItem struct {
 	Data            VariableListData `json:"qData"`
 }
 
-// UnmarshalJSON implements json.Unmarshaler, see unmarshalListData for how Data is read.
+// UnmarshalJSON implements json.Unmarshaler, see UnmarshalListData for how Data is read.
 func (item *VariableListItem) UnmarshalJSON(data []byte) error {
 	type plain VariableListItem
 	raw := struct {
@@ -344,7 +379,7 @@ func (item *VariableListItem) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	return unmarshalListData(raw.Data, &item.Data)
+	return UnmarshalListData(raw.Data, &item.Data)
 }
 
 func variableListProps() *GenericObjectProperties {
@@ -361,12 +396,12 @@ func variableListProps() *GenericObjectProperties {
 
 // GetVariableList returns the app's variables, including reserved and configuration variables.
 func (doc *Doc) GetVariableList(ctx context.Context) ([]*VariableListItem, error) {
-	return getListItems[*VariableListItem](ctx, doc, "qVariableList", variableListProps())
+	return getListItems[*VariableListItem](ctx, doc, variableListProps())
 }
 
 // GetVariableListObject returns the session object holding the app's variables.
 func (doc *Doc) GetVariableListObject(ctx context.Context) (*SessionList[*VariableListItem], error) {
-	return getListObject[*VariableListItem](ctx, doc, "qVariableList", variableListProps())
+	return GetSessionList[*VariableListItem](ctx, doc, variableListProps())
 }
 
 // Bookmarks
@@ -396,12 +431,12 @@ func bookmarkListProps() *GenericObjectProperties {
 
 // GetBookmarkList returns the app's bookmarks.
 func (doc *Doc) GetBookmarkList(ctx context.Context) ([]*BookmarkListItem, error) {
-	return getListItems[*BookmarkListItem](ctx, doc, "qBookmarkList", bookmarkListProps())
+	return getListItems[*BookmarkListItem](ctx, doc, bookmarkListProps())
 }
 
 // GetBookmarkListObject returns the session object holding the app's bookmarks.
 func (doc *Doc) GetBookmarkListObject(ctx context.Context) (*SessionList[*BookmarkListItem], error) {
-	return getListObject[*BookmarkListItem](ctx, doc, "qBookmarkList", bookmarkListProps())
+	return GetSessionList[*BookmarkListItem](ctx, doc, bookmarkListProps())
 }
 
 // Snapshots
@@ -433,12 +468,12 @@ func snapshotListProps() *GenericObjectProperties {
 
 // GetSnapshotList returns the app's snapshots.
 func (doc *Doc) GetSnapshotList(ctx context.Context) ([]*SnapshotListItem, error) {
-	return getListItems[*SnapshotListItem](ctx, doc, "qBookmarkList", snapshotListProps())
+	return getListItems[*SnapshotListItem](ctx, doc, snapshotListProps())
 }
 
 // GetSnapshotListObject returns the session object holding the app's snapshots.
 func (doc *Doc) GetSnapshotListObject(ctx context.Context) (*SessionList[*SnapshotListItem], error) {
-	return getListObject[*SnapshotListItem](ctx, doc, "qBookmarkList", snapshotListProps())
+	return GetSessionList[*SnapshotListItem](ctx, doc, snapshotListProps())
 }
 
 // Sheets
@@ -493,12 +528,12 @@ func sheetListProps() *GenericObjectProperties {
 
 // GetSheetList returns the app's sheets.
 func (doc *Doc) GetSheetList(ctx context.Context) ([]*SheetListItem, error) {
-	return getListItems[*SheetListItem](ctx, doc, "qAppObjectList", sheetListProps())
+	return getListItems[*SheetListItem](ctx, doc, sheetListProps())
 }
 
 // GetSheetListObject returns the session object holding the app's sheets.
 func (doc *Doc) GetSheetListObject(ctx context.Context) (*SessionList[*SheetListItem], error) {
-	return getListObject[*SheetListItem](ctx, doc, "qAppObjectList", sheetListProps())
+	return GetSessionList[*SheetListItem](ctx, doc, sheetListProps())
 }
 
 // Stories
@@ -526,12 +561,12 @@ func storyListProps() *GenericObjectProperties {
 
 // GetStoryList returns the app's stories.
 func (doc *Doc) GetStoryList(ctx context.Context) ([]*StoryListItem, error) {
-	return getListItems[*StoryListItem](ctx, doc, "qAppObjectList", storyListProps())
+	return getListItems[*StoryListItem](ctx, doc, storyListProps())
 }
 
 // GetStoryListObject returns the session object holding the app's stories.
 func (doc *Doc) GetStoryListObject(ctx context.Context) (*SessionList[*StoryListItem], error) {
-	return getListObject[*StoryListItem](ctx, doc, "qAppObjectList", storyListProps())
+	return GetSessionList[*StoryListItem](ctx, doc, storyListProps())
 }
 
 // On-demand apps
@@ -560,20 +595,20 @@ func odagListProps(id, objectType string) *GenericObjectProperties {
 
 // GetODAGAppLinkList returns the app's on-demand app navigation links.
 func (doc *Doc) GetODAGAppLinkList(ctx context.Context) ([]*ODAGAppLinkListItem, error) {
-	return getListItems[*ODAGAppLinkListItem](ctx, doc, "qAppObjectList", odagListProps("ODAGAppLinkList", "odagapplink"))
+	return getListItems[*ODAGAppLinkListItem](ctx, doc, odagListProps("ODAGAppLinkList", "odagapplink"))
 }
 
 // GetODAGAppLinkListObject returns the session object holding the app's on-demand app navigation links.
 func (doc *Doc) GetODAGAppLinkListObject(ctx context.Context) (*SessionList[*ODAGAppLinkListItem], error) {
-	return getListObject[*ODAGAppLinkListItem](ctx, doc, "qAppObjectList", odagListProps("ODAGAppLinkList", "odagapplink"))
+	return GetSessionList[*ODAGAppLinkListItem](ctx, doc, odagListProps("ODAGAppLinkList", "odagapplink"))
 }
 
 // GetDynamicAppViewList returns the app's dynamic views.
 func (doc *Doc) GetDynamicAppViewList(ctx context.Context) ([]*DynamicAppViewListItem, error) {
-	return getListItems[*DynamicAppViewListItem](ctx, doc, "qAppObjectList", odagListProps("DynamicAppViewList", "dynamicappview"))
+	return getListItems[*DynamicAppViewListItem](ctx, doc, odagListProps("DynamicAppViewList", "dynamicappview"))
 }
 
 // GetDynamicAppViewListObject returns the session object holding the app's dynamic views.
 func (doc *Doc) GetDynamicAppViewListObject(ctx context.Context) (*SessionList[*DynamicAppViewListItem], error) {
-	return getListObject[*DynamicAppViewListItem](ctx, doc, "qAppObjectList", odagListProps("DynamicAppViewList", "dynamicappview"))
+	return GetSessionList[*DynamicAppViewListItem](ctx, doc, odagListProps("DynamicAppViewList", "dynamicappview"))
 }

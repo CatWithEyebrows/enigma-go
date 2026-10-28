@@ -2,6 +2,7 @@ package enigma
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -59,6 +60,47 @@ func TestCreateWithIDWithoutID(t *testing.T) {
 	assert.Equal(t, []string{"CreateSessionObject", "CreateSessionObject", "CreateSessionObject"}, methods(*calls))
 }
 
+type customListData struct {
+	Title   string   `json:"title"`
+	Count   int      `json:"count"`
+	Visible bool     `json:"visible"`
+	Tags    []string `json:"tags"`
+}
+
+func TestUnmarshalListDataMissingPaths(t *testing.T) {
+	var data customListData
+	// The engine returns "" for paths that don't exist in an object
+	err := UnmarshalListData(json.RawMessage(`{"title":"T","count":"","visible":"","tags":""}`), &data)
+	assert.NoError(t, err)
+	assert.Equal(t, customListData{Title: "T"}, data)
+
+	err = UnmarshalListData(json.RawMessage(`{"title":"T","count":3,"visible":true,"tags":["a"]}`), &data)
+	assert.NoError(t, err)
+	assert.Equal(t, customListData{Title: "T", Count: 3, Visible: true, Tags: []string{"a"}}, data)
+}
+
+func TestGetSessionListCustomList(t *testing.T) {
+	doc, _ := connectFakeEngine(t, func(method string, params []interface{}) string {
+		if method == "GetLayout" {
+			return `{"qLayout":{"qAppObjectList":{"qItems":[{"qInfo":{"qId":"o1"},"qData":{"title":"One","count":""}}]}}}`
+		}
+		return object(5, "MyList")
+	})
+	ctx := context.Background()
+	list, err := GetSessionList[*ListItem[customListData]](ctx, doc, &GenericObjectProperties{
+		Info:             &NxInfo{Id: "MyList", Type: "MyList"},
+		AppObjectListDef: &AppObjectListDef{Type: "my-object", Data: json.RawMessage(`{"title":"/title","count":"/count"}`)},
+	})
+	require.NoError(t, err)
+	items, err := list.Items(ctx)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, customListData{Title: "One"}, items[0].Data)
+
+	_, err = GetSessionList[*ListItem[customListData]](ctx, doc, &GenericObjectProperties{Info: &NxInfo{Id: "NoList"}})
+	assert.Error(t, err, "props without a list definition")
+}
+
 func TestEngineBehaviorsIntegration(t *testing.T) {
 	doc := connectSessionApp(t)
 	ctx := context.Background()
@@ -103,5 +145,42 @@ func TestEngineBehaviorsIntegration(t *testing.T) {
 		duplicate, err := doc.CreateObject(ctx, object)
 		require.NoError(t, err)
 		assert.NotEqual(t, "obj-1", duplicate.GenericId)
+	})
+
+	t.Run("missing qData paths", func(t *testing.T) {
+		_, err := doc.CreateObjectRaw(ctx, map[string]any{"qInfo": map[string]any{"qId": "full", "qType": "custom"}, "title": "Full", "count": 3, "visible": true, "tags": []string{"a"}})
+		require.NoError(t, err)
+		_, err = doc.CreateObjectRaw(ctx, map[string]any{"qInfo": map[string]any{"qId": "empty", "qType": "custom"}})
+		require.NoError(t, err)
+		qData := json.RawMessage(`{"title":"/title","count":"/count","visible":"/visible","tags":"/tags"}`)
+
+		list, err := GetSessionList[*ListItem[customListData]](ctx, doc, &GenericObjectProperties{
+			Info:             &NxInfo{Id: "CustomList", Type: "CustomList"},
+			AppObjectListDef: &AppObjectListDef{Type: "custom", Data: qData},
+		})
+		require.NoError(t, err)
+		items, err := list.Items(ctx)
+		require.NoError(t, err)
+		byID := map[string]customListData{}
+		for _, item := range items {
+			byID[item.Info.Id] = item.Data
+		}
+		assert.Equal(t, map[string]customListData{
+			"full":  {Title: "Full", Count: 3, Visible: true, Tags: []string{"a"}},
+			"empty": {},
+		}, byID)
+
+		// GetObjects returns the same "" values for paths an object doesn't have
+		entries, err := doc.GetObjects(ctx, &NxGetObjectOptions{Types: []string{"custom"}, Data: qData})
+		require.NoError(t, err)
+		require.Len(t, entries, 2)
+		for _, entry := range entries {
+			var data customListData
+			require.NoError(t, UnmarshalListData(entry.Data, &data), entry.Info.Id)
+			assert.Equal(t, byID[entry.Info.Id], data)
+			if entry.Info.Id == "empty" {
+				assert.Error(t, json.Unmarshal(entry.Data, &data), "plain json.Unmarshal fails on the empty values")
+			}
+		}
 	})
 }

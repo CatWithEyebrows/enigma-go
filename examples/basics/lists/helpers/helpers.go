@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -73,4 +74,26 @@ func main() {
 	<-changed
 	sheets, _ = sheetList.Items(ctx)
 	fmt.Printf("The sheet list changed and now has %d sheets\n", len(sheets))
+
+	// GetSessionList works the same way for your own list definitions. Values for paths that an
+	// object doesn't have, like /doesNotExist here, are left as zero values.
+	type sheetData struct {
+		Title string  `json:"title"`
+		Rank  float64 `json:"rank"`
+		Owner string  `json:"owner"`
+	}
+	custom, err := enigma.GetSessionList[*enigma.ListItem[sheetData]](ctx, doc, &enigma.GenericObjectProperties{
+		Info: &enigma.NxInfo{Id: "MySheetList", Type: "MySheetList"},
+		AppObjectListDef: &enigma.AppObjectListDef{
+			Type: "sheet",
+			Data: json.RawMessage(`{"title":"/qMetaDef/title","rank":"/rank","owner":"/doesNotExist"}`),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	items, _ := custom.Items(ctx)
+	for _, item := range items {
+		fmt.Printf("Custom list: %+v\n", item.Data)
+	}
 }
