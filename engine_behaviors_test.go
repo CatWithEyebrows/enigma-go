@@ -101,6 +101,40 @@ func TestGetSessionListCustomList(t *testing.T) {
 	assert.Error(t, err, "props without a list definition")
 }
 
+func TestNilParamsAreNotSentAsNull(t *testing.T) {
+	var nilBytes []byte
+	var nilAny any
+	cases := []struct {
+		param    interface{}
+		expected string
+	}{
+		{[]string(nil), `[]`},
+		{[]*NxPage(nil), `[]`},
+		{map[string]int(nil), `{}`},
+		{(*NxPage)(nil), `{}`},
+		{json.RawMessage(nil), `{}`},
+		{nilBytes, `{}`},
+		{[]byte(`{"a":1}`), `{"a":1}`},
+		{[]string{"a"}, `["a"]`},
+		{&NxPage{Top: 1}, `{"qTop":1}`},
+		{"", `""`},
+		{0, `0`},
+		// Untyped nil, e.g. from the Raw methods, has no type to make an empty value of
+		{nilAny, `null`},
+	}
+	for _, c := range cases {
+		encoded, err := json.Marshal(ensureEncodable(c.param))
+		assert.NoError(t, err)
+		assert.JSONEq(t, c.expected, string(encoded), "%#v", c.param)
+	}
+
+	doc, calls := connectFakeEngine(t, func(string, []interface{}) string { return `{"qErrorMsg":""}` })
+	_, _, _, err := doc.CheckExpression(context.Background(), "Sum(A)", nil, false)
+	assert.NoError(t, err)
+	sent, _ := json.Marshal((*calls)[0].params)
+	assert.JSONEq(t, `["Sum(A)",[],false]`, string(sent))
+}
+
 func TestEngineBehaviorsIntegration(t *testing.T) {
 	doc := connectSessionApp(t)
 	ctx := context.Background()
@@ -182,5 +216,19 @@ func TestEngineBehaviorsIntegration(t *testing.T) {
 				assert.Error(t, json.Unmarshal(entry.Data, &data), "plain json.Unmarshal fails on the empty values")
 			}
 		}
+	})
+
+	t.Run("nil params", func(t *testing.T) {
+		// nil labels used to be sent as null, which the engine rejects with a JSON parse error
+		msg, badFields, _, err := doc.CheckExpression(ctx, "Sum(Missing)", nil, false)
+		require.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.Len(t, badFields, 1)
+
+		// A nil struct pointer is sent as {}, so the engine reports what is missing instead
+		_, err = doc.GetObjects(ctx, nil)
+		var qixErr Error
+		require.ErrorAs(t, err, &qixErr)
+		assert.NotEqual(t, "LOCERR_JSON_RPC_PARSE_ERROR", ErrorCodeLookup(qixErr.Code()))
 	})
 }
