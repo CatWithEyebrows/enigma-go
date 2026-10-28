@@ -528,6 +528,15 @@ func emptyValue(typeName string) string {
 	}
 }
 
+// trailingOptionalNilable returns how many of the last parameters are optional and can be left nil
+func trailingOptionalNilable(params []*Type, raw bool) int {
+	count := 0
+	for i := len(params) - 1; i >= 0 && !params[i].Required && isNilable(optionTypeName(params[i], raw)); i-- {
+		count++
+	}
+	return count
+}
+
 func optionTypeName(option *Type, raw bool) string {
 	if raw {
 		return getRawInputTypeName(option)
@@ -557,15 +566,40 @@ func printOptionsStruct(out *os.File, serviceName, methodName string, options []
 // printRPCCall prints the call down to the RPC machinery. WithOptions variants append the options that are set.
 func printRPCCall(out *os.File, methodName string, resultParamName string, variant methodVariant, raw bool) {
 	if len(variant.options) == 0 {
-		fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName)
-		for _, param := range variant.params {
-			// Fill in the parameters in the parameter array
-			fmt.Fprint(out, ", ", toParamName(param.Name))
+		trailing := trailingOptionalNilable(variant.params, raw)
+		if trailing == 0 {
+			fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName)
+			for _, param := range variant.params {
+				// Fill in the parameters in the parameter array
+				fmt.Fprint(out, ", ", toParamName(param.Name))
+			}
+			fmt.Fprintln(out, ")")
+			return
 		}
-		fmt.Fprintln(out, ")")
+		// The engine needs an empty array or object for some of these, null for others, while
+		// leaving them out works for all of them
+		fmt.Fprint(out, "\tsentParams := []interface{}{")
+		for i, param := range variant.params {
+			if i > 0 {
+				fmt.Fprint(out, ", ")
+			}
+			fmt.Fprint(out, toParamName(param.Name))
+		}
+		fmt.Fprintln(out, "}")
+		fmt.Fprintln(out, "\t// Optional parameters left nil at the end are not sent, so the engine uses their default values")
+		indent := "\t"
+		for i := len(variant.params) - 1; i >= len(variant.params)-trailing; i-- {
+			fmt.Fprintln(out, indent+"if "+toParamName(variant.params[i].Name)+" == nil {")
+			indent += "\t"
+			fmt.Fprintf(out, "%ssentParams = sentParams[:%d]\n", indent, i)
+		}
+		for ; len(indent) > 1; indent = indent[1:] {
+			fmt.Fprintln(out, indent[1:]+"}")
+		}
+		fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName, ", sentParams...)\n")
 		return
 	}
-	fmt.Fprint(out, "\tparams := []interface{}{")
+	fmt.Fprint(out, "\tsentParams := []interface{}{")
 	for i, param := range variant.params {
 		if i > 0 {
 			fmt.Fprint(out, ", ")
@@ -574,7 +608,7 @@ func printRPCCall(out *os.File, methodName string, resultParamName string, varia
 	}
 	fmt.Fprintln(out, "}")
 	fmt.Fprintln(out, "\tif opts != nil {")
-	fmt.Fprint(out, "\t\tparams = appendOptionalParams(params")
+	fmt.Fprint(out, "\t\tsentParams = appendOptionalParams(sentParams")
 	for _, option := range variant.options {
 		field := "opts." + toPublicMemberName(option.Name)
 		if isNilable(optionTypeName(option, raw)) {
@@ -586,7 +620,7 @@ func printRPCCall(out *os.File, methodName string, resultParamName string, varia
 	}
 	fmt.Fprintln(out, ")")
 	fmt.Fprintln(out, "\t}")
-	fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName, ", params...)\n")
+	fmt.Fprint(out, "\terr := obj.RPC(ctx, \"", methodName, "\", ", resultParamName, ", sentParams...)\n")
 }
 
 // optionalParamsHelpers is added to the generated file when at least one method has options

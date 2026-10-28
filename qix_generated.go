@@ -7407,7 +7407,12 @@ func (obj *Doc) CreateBookmarkEx(ctx context.Context, prop *GenericBookmarkPrope
 	result := &struct {
 		Return *ObjectInterface `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "CreateBookmarkEx", result, prop, objectIdsToPatch)
+	sentParams := []interface{}{prop, objectIdsToPatch}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if objectIdsToPatch == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "CreateBookmarkEx", result, sentParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -7430,7 +7435,12 @@ func (obj *Doc) CreateBookmarkExRaw(ctx context.Context, prop any, objectIdsToPa
 	result := &struct {
 		Return *ObjectInterface `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "CreateBookmarkEx", result, prop, objectIdsToPatch)
+	sentParams := []interface{}{prop, objectIdsToPatch}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if objectIdsToPatch == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "CreateBookmarkEx", result, sentParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -7762,7 +7772,12 @@ func (obj *Doc) CreateTemporaryBookmark(ctx context.Context, options *NxTempBook
 		Id     string `json:"qId"`
 		Return bool   `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "CreateTemporaryBookmark", result, options, objectIdsToPatch)
+	sentParams := []interface{}{options, objectIdsToPatch}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if objectIdsToPatch == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "CreateTemporaryBookmark", result, sentParams...)
 	return result.Id, result.Return, err
 }
 
@@ -7782,7 +7797,12 @@ func (obj *Doc) CreateTemporaryBookmarkRaw(ctx context.Context, options any, obj
 		Id     string `json:"qId"`
 		Return bool   `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "CreateTemporaryBookmark", result, options, objectIdsToPatch)
+	sentParams := []interface{}{options, objectIdsToPatch}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if objectIdsToPatch == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "CreateTemporaryBookmark", result, sentParams...)
 	return result.Id, result.Return, err
 }
 
@@ -8206,7 +8226,12 @@ func (obj *Doc) DoReloadEx(ctx context.Context, params *DoReloadExParams) (*DoRe
 	result := &struct {
 		Result *DoReloadExResult `json:"qResult"`
 	}{}
-	err := obj.RPC(ctx, "DoReloadEx", result, params)
+	sentParams := []interface{}{params}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if params == nil {
+		sentParams = sentParams[:0]
+	}
+	err := obj.RPC(ctx, "DoReloadEx", result, sentParams...)
 	return result.Result, err
 }
 
@@ -8284,7 +8309,12 @@ func (obj *Doc) DoReloadExRaw(ctx context.Context, params any) (json.RawMessage,
 	result := &struct {
 		Result json.RawMessage `json:"qResult"`
 	}{}
-	err := obj.RPC(ctx, "DoReloadEx", result, params)
+	sentParams := []interface{}{params}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if params == nil {
+		sentParams = sentParams[:0]
+	}
+	err := obj.RPC(ctx, "DoReloadEx", result, sentParams...)
 	return result.Result, err
 }
 
@@ -8447,7 +8477,12 @@ func (obj *Doc) ExportReducedData(ctx context.Context, options *NxDownloadOption
 	result := &struct {
 		DownloadInfo *NxDownloadInfo `json:"qDownloadInfo"`
 	}{}
-	err := obj.RPC(ctx, "ExportReducedData", result, options)
+	sentParams := []interface{}{options}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if options == nil {
+		sentParams = sentParams[:0]
+	}
+	err := obj.RPC(ctx, "ExportReducedData", result, sentParams...)
 	return result.DownloadInfo, err
 }
 
@@ -8463,7 +8498,12 @@ func (obj *Doc) ExportReducedDataRaw(ctx context.Context, options any) (json.Raw
 	result := &struct {
 		DownloadInfo json.RawMessage `json:"qDownloadInfo"`
 	}{}
-	err := obj.RPC(ctx, "ExportReducedData", result, options)
+	sentParams := []interface{}{options}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if options == nil {
+		sentParams = sentParams[:0]
+	}
+	err := obj.RPC(ctx, "ExportReducedData", result, sentParams...)
 	return result.DownloadInfo, err
 }
 
@@ -8923,7 +8963,12 @@ func (obj *Doc) GetDatabaseTablePreview(ctx context.Context, connectionId string
 		Preview  []*DataRecord `json:"qPreview"`
 		RowCount int           `json:"qRowCount"`
 	}{}
-	err := obj.RPC(ctx, "GetDatabaseTablePreview", result, connectionId, database, owner, table, conditions)
+	sentParams := []interface{}{connectionId, database, owner, table, conditions}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if conditions == nil {
+		sentParams = sentParams[:4]
+	}
+	err := obj.RPC(ctx, "GetDatabaseTablePreview", result, sentParams...)
 	return result.Preview, result.RowCount, err
 }
 
@@ -8949,7 +8994,12 @@ func (obj *Doc) GetDatabaseTablePreviewRaw(ctx context.Context, connectionId str
 		Preview  json.RawMessage `json:"qPreview"`
 		RowCount int             `json:"qRowCount"`
 	}{}
-	err := obj.RPC(ctx, "GetDatabaseTablePreview", result, connectionId, database, owner, table, conditions)
+	sentParams := []interface{}{connectionId, database, owner, table, conditions}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if conditions == nil {
+		sentParams = sentParams[:4]
+	}
+	err := obj.RPC(ctx, "GetDatabaseTablePreview", result, sentParams...)
 	return result.Preview, result.RowCount, err
 }
 
@@ -10679,7 +10729,12 @@ func (obj *Doc) ReplaceBookmark(ctx context.Context, id string, ignorePatches bo
 	result := &struct {
 		Return *ObjectInterface `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "ReplaceBookmark", result, id, ignorePatches, objectIdsToPatch)
+	sentParams := []interface{}{id, ignorePatches, objectIdsToPatch}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if objectIdsToPatch == nil {
+		sentParams = sentParams[:2]
+	}
+	err := obj.RPC(ctx, "ReplaceBookmark", result, sentParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -12530,7 +12585,12 @@ func (obj *GenericObject) BeginSelections(ctx context.Context, paths []string) e
 //
 // Stability: locked
 func (obj *GenericObject) ClearSelections(ctx context.Context, path string, colIndices []int) error {
-	err := obj.RPC(ctx, "ClearSelections", nil, path, colIndices)
+	sentParams := []interface{}{path, colIndices}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if colIndices == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "ClearSelections", nil, sentParams...)
 	return err
 }
 
@@ -12619,7 +12679,12 @@ func (obj *GenericObject) CreateChild(ctx context.Context, prop *GenericObjectPr
 	result := &struct {
 		Return *ObjectInterface `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "CreateChild", result, prop, propForThis)
+	sentParams := []interface{}{prop, propForThis}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if propForThis == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "CreateChild", result, sentParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -12646,7 +12711,12 @@ func (obj *GenericObject) CreateChildRaw(ctx context.Context, prop any, propForT
 	result := &struct {
 		Return *ObjectInterface `json:"qReturn"`
 	}{}
-	err := obj.RPC(ctx, "CreateChild", result, prop, propForThis)
+	sentParams := []interface{}{prop, propForThis}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if propForThis == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "CreateChild", result, sentParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -12709,7 +12779,12 @@ func (obj *GenericObject) CreateGroupRaw(ctx context.Context, path string, group
 //
 // Stability: locked
 func (obj *GenericObject) DestroyAllChildren(ctx context.Context, propForThis *GenericObjectProperties) error {
-	err := obj.RPC(ctx, "DestroyAllChildren", nil, propForThis)
+	sentParams := []interface{}{propForThis}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if propForThis == nil {
+		sentParams = sentParams[:0]
+	}
+	err := obj.RPC(ctx, "DestroyAllChildren", nil, sentParams...)
 	return err
 }
 
@@ -12722,7 +12797,12 @@ func (obj *GenericObject) DestroyAllChildren(ctx context.Context, propForThis *G
 //
 // Stability: locked
 func (obj *GenericObject) DestroyAllChildrenRaw(ctx context.Context, propForThis any) error {
-	err := obj.RPC(ctx, "DestroyAllChildren", nil, propForThis)
+	sentParams := []interface{}{propForThis}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if propForThis == nil {
+		sentParams = sentParams[:0]
+	}
+	err := obj.RPC(ctx, "DestroyAllChildren", nil, sentParams...)
 	return err
 }
 
@@ -12744,7 +12824,12 @@ func (obj *GenericObject) DestroyChild(ctx context.Context, id string, propForTh
 	result := &struct {
 		Success bool `json:"qSuccess"`
 	}{}
-	err := obj.RPC(ctx, "DestroyChild", result, id, propForThis)
+	sentParams := []interface{}{id, propForThis}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if propForThis == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "DestroyChild", result, sentParams...)
 	return result.Success, err
 }
 
@@ -12766,7 +12851,12 @@ func (obj *GenericObject) DestroyChildRaw(ctx context.Context, id string, propFo
 	result := &struct {
 		Success bool `json:"qSuccess"`
 	}{}
-	err := obj.RPC(ctx, "DestroyChild", result, id, propForThis)
+	sentParams := []interface{}{id, propForThis}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if propForThis == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "DestroyChild", result, sentParams...)
 	return result.Success, err
 }
 
@@ -13691,7 +13781,12 @@ func (obj *GenericObject) GetHyperCubeTreeData(ctx context.Context, path string,
 	result := &struct {
 		Nodes []*NxTreeNode `json:"qNodes"`
 	}{}
-	err := obj.RPC(ctx, "GetHyperCubeTreeData", result, path, nodeOptions)
+	sentParams := []interface{}{path, nodeOptions}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if nodeOptions == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "GetHyperCubeTreeData", result, sentParams...)
 	return result.Nodes, err
 }
 
@@ -13709,7 +13804,12 @@ func (obj *GenericObject) GetHyperCubeTreeDataRaw(ctx context.Context, path stri
 	result := &struct {
 		Nodes json.RawMessage `json:"qNodes"`
 	}{}
-	err := obj.RPC(ctx, "GetHyperCubeTreeData", result, path, nodeOptions)
+	sentParams := []interface{}{path, nodeOptions}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if nodeOptions == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "GetHyperCubeTreeData", result, sentParams...)
 	return result.Nodes, err
 }
 
@@ -13922,7 +14022,12 @@ func (obj *GenericObject) GetSnapshotObject(ctx context.Context) (*GenericObject
 //
 // Stability: locked
 func (obj *GenericObject) Lock(ctx context.Context, path string, colIndices []int) error {
-	err := obj.RPC(ctx, "Lock", nil, path, colIndices)
+	sentParams := []interface{}{path, colIndices}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if colIndices == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "Lock", nil, sentParams...)
 	return err
 }
 
@@ -14751,7 +14856,12 @@ func (obj *GenericObject) UnPublish(ctx context.Context) error {
 //
 // Stability: locked
 func (obj *GenericObject) Unlock(ctx context.Context, path string, colIndices []int) error {
-	err := obj.RPC(ctx, "Unlock", nil, path, colIndices)
+	sentParams := []interface{}{path, colIndices}
+	// Optional parameters left nil at the end are not sent, so the engine uses their default values
+	if colIndices == nil {
+		sentParams = sentParams[:1]
+	}
+	err := obj.RPC(ctx, "Unlock", nil, sentParams...)
 	return err
 }
 

@@ -155,7 +155,37 @@ func TestCreateChildWithIDTaken(t *testing.T) {
 	assert.ErrorIs(t, err, ErrIDTaken)
 	assert.Equal(t, []string{"CreateChild", "DestroyChild"}, methods(*calls))
 	sent, _ := json.Marshal(ensureAllEncodable((*calls)[1].params))
-	assert.JSONEq(t, `["random-id",null]`, string(sent), "the parent's properties are left alone")
+	assert.JSONEq(t, `["random-id"]`, string(sent), "propForThis is left out, so the parent's properties stay as they are")
+}
+
+func TestTrailingNilOptionalParamsAreNotSent(t *testing.T) {
+	doc, calls := connectFakeEngine(t, func(method string, params []interface{}) string {
+		if method == "GetObject" {
+			return object(5, "obj")
+		}
+		return `{}`
+	})
+	ctx := context.Background()
+	obj, err := doc.GetObject(ctx, "obj")
+	require.NoError(t, err)
+	sent := func(call func()) string {
+		*calls = nil
+		call()
+		params, _ := json.Marshal(ensureAllEncodable((*calls)[0].params))
+		return string(params)
+	}
+
+	assert.JSONEq(t, `[]`, sent(func() { doc.DoReloadEx(ctx, nil) }))
+	assert.JSONEq(t, `[{"qMode":1}]`, sent(func() { doc.DoReloadEx(ctx, &DoReloadExParams{Mode: 1}) }))
+	assert.JSONEq(t, `["/qHyperCubeDef"]`, sent(func() { obj.GetHyperCubeTreeData(ctx, "/qHyperCubeDef", nil) }))
+	assert.JSONEq(t, `[{"qInfo":{"qType":"child"}}]`, sent(func() { obj.CreateChild(ctx, &GenericObjectProperties{Info: &NxInfo{Type: "child"}}, nil) }))
+	assert.JSONEq(t, `[]`, sent(func() { obj.DestroyAllChildren(ctx, nil) }))
+	assert.JSONEq(t, `["/qListObjectDef"]`, sent(func() { obj.Lock(ctx, "/qListObjectDef", nil) }))
+	assert.JSONEq(t, `["/qListObjectDef",[0]]`, sent(func() { obj.Lock(ctx, "/qListObjectDef", []int{0}) }))
+	// Only optional parameters are left out, a nil required one is still sent
+	assert.JSONEq(t, `[null]`, sent(func() { doc.CreateTemporaryBookmark(ctx, nil, nil) }))
+	// A nil optional array that isn't last is sent as []
+	assert.JSONEq(t, `["Sum(A)",[],false]`, sent(func() { doc.CheckExpression(ctx, "Sum(A)", nil, false) }))
 }
 
 func TestEngineBehaviorsIntegration(t *testing.T) {
@@ -282,7 +312,24 @@ func TestEngineBehaviorsIntegration(t *testing.T) {
 		// A nil qPropForThis has to stay null: the engine reads {} as properties replacing the parent's
 		parent, err := doc.CreateObject(ctx, &GenericObjectProperties{Info: &NxInfo{Type: "parent"}, ChildListDef: &ChildListDef{}})
 		require.NoError(t, err)
+		child, err := parent.CreateChild(ctx, &GenericObjectProperties{Info: &NxInfo{Type: "child"}}, nil)
+		assert.NoError(t, err)
+		_, err = parent.DestroyChild(ctx, child.GenericId, nil)
+		assert.NoError(t, err)
 		_, err = parent.CreateChild(ctx, &GenericObjectProperties{Info: &NxInfo{Type: "child"}}, nil)
+		assert.NoError(t, err)
+		assert.NoError(t, parent.DestroyAllChildren(ctx, nil))
+
+		// These reject null and needed {}: left out, the engine uses their defaults
+		result, err := doc.DoReloadEx(ctx, nil)
+		require.NoError(t, err)
+		assert.True(t, result.Success)
+		cube, err := doc.CreateSessionObject(ctx, &GenericObjectProperties{
+			Info:        &NxInfo{Type: "tree"},
+			TreeDataDef: &TreeDataDef{Dimensions: []*NxTreeDimensionDef{{Def: &NxInlineDimensionDef{FieldDefs: []string{"A"}}}}},
+		})
+		require.NoError(t, err)
+		_, err = cube.GetHyperCubeTreeData(ctx, "/qTreeDataDef", nil)
 		assert.NoError(t, err)
 	})
 }
