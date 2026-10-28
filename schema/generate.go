@@ -810,13 +810,19 @@ func main() {
 			fmt.Fprintln(out, "type", defName, "struct {")
 			// types
 			propertiesKeys := getOriginalOrderSortedKeys(def.Properties)
+			declared := make(map[string]bool, len(propertiesKeys))
 			for _, key := range propertiesKeys {
 				propertyName := key.Key
 				property := def.Properties[key]
 				printStructMember(propertyName, property, out)
+				declared[propertyName] = true
 			}
 			if def.AdditionalProperties != nil {
 				for _, property := range def.AdditionalProperties.AnyOf {
+					// Newer specs list some additional properties as regular properties too
+					if declared[property.Name] {
+						continue
+					}
 					printStructMember(property.Name, property.Schema, out)
 				}
 			}
