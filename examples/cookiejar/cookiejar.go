@@ -26,6 +26,10 @@ func main() {
 
 	//Print all session cookies with the URL "https://www.qlik.com/"
 	urlTest, err := url.Parse("https://www.qlik.com/")
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
 
 	cookies := dialer.Jar.Cookies(urlTest)
 	if len(cookies) == 0 {
@@ -46,6 +50,9 @@ func dummyCookieJar() (jar http.CookieJar, err error) {
 
 	// Create an empty jar
 	jar, err = cookiejar.New(nil)
+	if err != nil {
+		return nil, err
+	}
 
 	//Fill the jar with cookies
 	header := http.Header{}

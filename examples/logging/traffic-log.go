@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -62,7 +61,6 @@ func runScenario(dialer *enigma.Dialer) {
 	qcsHost := os.Getenv("QCS_HOST")
 	qcsApiKey := os.Getenv("QCS_API_KEY")
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	// Connect to Qlik Cloud tenant and create a session document:
 	global, _ := dialer.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", qcsApiKey)},

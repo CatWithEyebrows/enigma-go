@@ -36,5 +36,5 @@ func main() {
 	fmt.Println(script)
 
 	global.DisconnectFromServer()
-	fmt.Println(fmt.Sprintf("Connected to engine version %s.", version.ComponentVersion))
+	fmt.Printf("Connected to engine version %s.\n", version.ComponentVersion)
 }

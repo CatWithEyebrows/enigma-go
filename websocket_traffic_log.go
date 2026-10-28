@@ -2,7 +2,7 @@ package enigma
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"sync"
 )
 
@@ -41,7 +41,7 @@ func (t *fileTrafficLog) Received(message []byte) {
 // Closed implements the TrafficLogger interface
 func (t *fileTrafficLog) Closed() {
 	bytes, _ := json.MarshalIndent(t.Messages, "", "\t")
-	ioutil.WriteFile(t.FileName, bytes, 0644)
+	os.WriteFile(t.FileName, bytes, 0644)
 }
 
 func newFileTrafficLogger(filename string) *fileTrafficLog {
@@ -49,7 +49,7 @@ func newFileTrafficLogger(filename string) *fileTrafficLog {
 }
 
 func readTrafficLog(fileName string) []trafficLogRow {
-	file, _ := ioutil.ReadFile(fileName)
+	file, _ := os.ReadFile(fileName)
 	result := []trafficLogRow{}
 	_ = json.Unmarshal(file, &result)
 	return result

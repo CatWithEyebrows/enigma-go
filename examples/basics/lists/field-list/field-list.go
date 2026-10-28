@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -28,7 +27,6 @@ func main() {
 
 	// Connect to Qlik Cloud tenant and create a session document:
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	global, _ := enigma.Dialer{}.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", qcsApiKey)},
 	})
@@ -50,7 +48,7 @@ func main() {
 	layout, _ := object.GetLayout(ctx)
 
 	LayoutAsJSON, _ := json.MarshalIndent(layout, "", "  ")
-	fmt.Println(fmt.Sprintf("Field list: %s", LayoutAsJSON))
+	fmt.Printf("Field list: %s\n", LayoutAsJSON)
 
 	// Close the session
 	global.DisconnectFromServer()

@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -18,7 +17,6 @@ func main() {
 
 	const script = "TempTable: Load RecNo() as ID, Rand() as Value AutoGenerate 1000000"
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 
 	// Configure the dialer to use an interceptor.
 	dialer := enigma.Dialer{

@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/CatWithEyebrows/enigma-go/v4"
 )
@@ -28,7 +27,6 @@ func main() {
 
 	// Connect to Qlik Cloud tenant and create a session document:
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
 	global, _ := enigma.Dialer{}.Dial(ctx, fmt.Sprintf("wss://%s/app/SessionApp_%v", qcsHost, rand.Int()), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", qcsApiKey)},
 	})
@@ -38,7 +36,7 @@ func main() {
 	// Load in some data into the session document:
 	doc.SetScript(ctx, script)
 	doc.DoReload(ctx, 0, false, false)
-	variable, _ := doc.CreateVariableEx(ctx, &enigma.GenericVariableProperties{
+	doc.CreateVariableEx(ctx, &enigma.GenericVariableProperties{
 		Comment:    "sample comment",
 		Definition: "=Count(Filed1)",
 		Info: &enigma.NxInfo{
@@ -46,7 +44,7 @@ func main() {
 		},
 		Name: "vVariableName",
 	})
-	variable, _ = doc.GetVariableById(ctx, "vVariableName")
+	variable, _ := doc.GetVariableById(ctx, "vVariableName")
 	_, ok := interface{}(variable).(*enigma.GenericVariable)
 	if !ok {
 		fmt.Printf("GetVariableId returned wrong type: %T, should have been %T", variable, enigma.GenericVariable{})
@@ -72,7 +70,7 @@ func main() {
 	layout, _ := object.GetLayoutRaw(ctx)
 
 	LayoutAsJSON, _ := json.MarshalIndent(layout, "", "  ")
-	fmt.Println(fmt.Sprintf("Variable list: %s", LayoutAsJSON))
+	fmt.Printf("Variable list: %s\n", LayoutAsJSON)
 
 	// Close the session
 	global.DisconnectFromServer()

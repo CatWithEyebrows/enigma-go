@@ -1,11 +1,12 @@
 package enigma
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func createAndConnectSession() (*session, *MockSocket, *RemoteObject) {

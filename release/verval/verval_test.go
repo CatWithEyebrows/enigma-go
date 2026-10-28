@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestParseValid(t *testing.T) {
-	in, err := ioutil.ReadFile("./test/valid.in")
+	in, err := os.ReadFile("./test/valid.in")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -34,7 +33,7 @@ func TestParseValid(t *testing.T) {
 }
 
 func TestParseInvalid(t *testing.T) {
-	in, err := ioutil.ReadFile("./test/invalid.in")
+	in, err := os.ReadFile("./test/invalid.in")
 	if err != nil {
 		t.Error(err.Error())
 	}
