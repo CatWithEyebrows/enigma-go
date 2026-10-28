@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"net/http"
-	"reflect"
 	"testing"
 )
 
@@ -81,7 +80,7 @@ func TestRawArrayConversion(t *testing.T) {
 	p2 := json.RawMessage("string2")
 	params := []interface{}{p1, p2}
 	result := convertToRawSliceIfNeeded(params)
-	assert.Equal(t, "[]json.RawMessage", reflect.TypeOf(result).String())
+	assert.IsType(t, []json.RawMessage{}, result)
 }
 func TestRawArrayConversionWithoutRawContent(t *testing.T) {
 	p1 := "string1"
