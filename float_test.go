@@ -69,7 +69,9 @@ func TestFloatUnmarshalJSON(t *testing.T) {
 }
 
 func TestFloatNonPointerUnmarshalJSON(t *testing.T) {
-	var f Float64
+	// The non-pointer argument is what this test is about. Passing it through an interface keeps go vet quiet.
+	var f any = Float64(0)
+	//lint:ignore SA1014 unmarshalling into a non-pointer is intentional
 	err := json.Unmarshal([]byte("1"), f)
 	if err == nil {
 		t.Error("Should not be able to unmarshal non-pointer")

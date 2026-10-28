@@ -28,7 +28,7 @@ func (r *RemoteObject) ChangedChannel() chan struct{} {
 // RemoveChangeChannel unregisters a channel from further events.
 func (r *RemoteObject) RemoveChangeChannel(channel chan struct{}) {
 	r.mutex.Lock()
-	if r.changedChannels[channel] != false {
+	if r.changedChannels[channel] {
 		delete(r.changedChannels, channel)
 		close(channel)
 	}
@@ -52,7 +52,7 @@ func (r *RemoteObject) signalClosed() {
 	r.mutex.Lock()
 	close(r.closedCh)
 	for channel := range r.changedChannels {
-		if r.changedChannels[channel] != false {
+		if r.changedChannels[channel] {
 			delete(r.changedChannels, channel)
 			close(channel)
 		}
