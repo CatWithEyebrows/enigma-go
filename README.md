@@ -1,8 +1,7 @@
 ![](enigma-go.png)
 
-[![CircleCI](https://circleci.com/gh/qlik-oss/enigma-go.svg?style=shield)](https://circleci.com/gh/qlik-oss/enigma-go)
-[![Go Report Card](https://goreportcard.com/badge/qlik-oss/enigma-go)](https://goreportcard.com/report/qlik-oss/enigma-go)
-![Latest Version](https://img.shields.io/github/release/qlik-oss/enigma-go.svg?style=flat)
+> This is a fork of [qlik-oss/enigma-go](https://github.com/qlik-oss/enigma-go), kept up to date with the latest
+> published engine schema. Import it as `github.com/CatWithEyebrows/enigma-go/v4`.
 
 enigma-go is a library that helps you communicate with a Qlik Associative Engine.
 Examples of use may be building your own analytics tools, back-end services, or other tools communicating with a Qlik Associative Engine.
@@ -20,7 +19,7 @@ Examples of use may be building your own analytics tools, back-end services, or 
 ## Installation
 
 ```bash
-go get -u github.com/qlik-oss/enigma-go/v4
+go get -u github.com/CatWithEyebrows/enigma-go/v4
 ```
 
 ## Getting started
@@ -33,7 +32,7 @@ Connecting to a Qlik Associative Engine and interacting with a document/app invo
 
 3. Open or create a document/app using openDoc or createApp.
 
-Refer to the [examples](https://github.com/qlik-oss/enigma-go/tree/master/examples) section for more information.
+Refer to the [examples](https://github.com/CatWithEyebrows/enigma-go/tree/master/examples) section for more information.
 
 ## Schemas
 

@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/qlik-oss/enigma-go/v4"
+	"github.com/CatWithEyebrows/enigma-go/v4"
 )
 
 // the Qlik Associative Engine hostname:

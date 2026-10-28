@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qlik-oss/enigma-go/v4"
+	"github.com/CatWithEyebrows/enigma-go/v4"
 )
 
 func main() {

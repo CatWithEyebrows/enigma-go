@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/CatWithEyebrows/enigma-go/v4"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/qlik-oss/enigma-go/v4"
 )
 
 // the Qlik Sense Enterprise hostname:

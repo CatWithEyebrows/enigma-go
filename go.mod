@@ -1,4 +1,4 @@
-module github.com/qlik-oss/enigma-go/v4
+module github.com/CatWithEyebrows/enigma-go/v4
 
 require (
 	github.com/goccy/go-json v0.10.6

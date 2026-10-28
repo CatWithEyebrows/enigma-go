@@ -17,5 +17,5 @@
 // 3. Open or create a document/app using openDoc or createApp
 //
 // See the example below for an illustration of how it may look. For more detail examples look at
-// the examples in https://github.com/qlik-oss/enigma-go/tree/master/examples. See respective README.md file for further information
+// the examples in https://github.com/CatWithEyebrows/enigma-go/tree/master/examples. See respective README.md file for further information
 package enigma
