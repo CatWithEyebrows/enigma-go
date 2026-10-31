@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -157,13 +158,38 @@ func TestListsIntegration(t *testing.T) {
 		assert.Equal(t, "Overview", sheet.Title)
 		assert.Equal(t, "First sheet", sheet.Description)
 		assert.Equal(t, "='Overview'", sheet.LabelExpression, "plain properties are not evaluated")
-		assert.Equal(t, Float64(1.5), sheet.Rank)
-		assert.Equal(t, Float64(24), sheet.Columns)
-		assert.Equal(t, Float64(12), sheet.Rows)
+		assert.Equal(t, PropertyFloat64(1.5), sheet.Rank)
+		assert.Equal(t, PropertyFloat64(24), sheet.Columns)
+		assert.Equal(t, PropertyFloat64(12), sheet.Rows)
 		require.Len(t, sheet.Cells, 1)
 		assert.Equal(t, "barchart", sheet.Cells[0].Type)
-		assert.Equal(t, Float64(50), sheet.Cells[0].Bounds.Width)
+		assert.Equal(t, PropertyFloat64(50), sheet.Cells[0].Bounds.Width)
 		assert.NotEmpty(t, sheet.Thumbnail)
+	})
+
+	// Sheet properties are stored as the client saved them, and some clients save numbers as strings.
+	t.Run("sheet numbers saved as strings", func(t *testing.T) {
+		_, err := doc.CreateObjectRaw(ctx, map[string]any{
+			"qInfo":    map[string]any{"qId": "sheet-strings", "qType": "sheet"},
+			"qMetaDef": map[string]any{"title": "Strings"},
+			"rank":     "2",
+			"columns":  "32",
+			"rows":     "32",
+			"cells":    []any{map[string]any{"name": "o1", "type": "kpi", "col": "0", "row": "0", "colspan": "12", "rowspan": "6"}},
+		})
+		require.NoError(t, err)
+		defer doc.DestroyObject(ctx, "sheet-strings")
+		items, err := doc.GetSheetList(ctx)
+		require.NoError(t, err)
+		require.Len(t, items, 2)
+		i := slices.IndexFunc(items, func(item *SheetListItem) bool { return item.Info.Id == "sheet-strings" })
+		require.NotEqual(t, -1, i)
+		sheet := items[i].Data
+		assert.Equal(t, PropertyFloat64(2), sheet.Rank)
+		assert.Equal(t, PropertyFloat64(32), sheet.Columns)
+		assert.Equal(t, PropertyFloat64(32), sheet.Rows)
+		require.Len(t, sheet.Cells, 1)
+		assert.Equal(t, PropertyFloat64(12), sheet.Cells[0].Colspan)
 	})
 
 	t.Run("stories", func(t *testing.T) {

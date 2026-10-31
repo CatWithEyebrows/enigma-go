@@ -480,20 +480,20 @@ func (doc *Doc) GetSnapshotListObject(ctx context.Context) (*SessionList[*Snapsh
 
 // SheetListDataCellBounds is the position and size of a cell on a sheet, in percent of the sheet.
 type SheetListDataCellBounds struct {
-	X      Float64 `json:"x"`
-	Y      Float64 `json:"y"`
-	Width  Float64 `json:"width"`
-	Height Float64 `json:"height"`
+	X      PropertyFloat64 `json:"x"`
+	Y      PropertyFloat64 `json:"y"`
+	Width  PropertyFloat64 `json:"width"`
+	Height PropertyFloat64 `json:"height"`
 }
 
 // SheetListDataCell is a visualization placed on a sheet.
 type SheetListDataCell struct {
 	Bounds  *SheetListDataCellBounds `json:"bounds,omitempty"`
-	Col     Float64                  `json:"col"`
-	Colspan Float64                  `json:"colspan"`
+	Col     PropertyFloat64          `json:"col"`
+	Colspan PropertyFloat64          `json:"colspan"`
 	Name    string                   `json:"name"`
-	Row     Float64                  `json:"row"`
-	Rowspan Float64                  `json:"rowspan"`
+	Row     PropertyFloat64          `json:"row"`
+	Rowspan PropertyFloat64          `json:"rowspan"`
 	Type    string                   `json:"type"`
 }
 
@@ -506,9 +506,9 @@ type SheetListData struct {
 	DescriptionExpression string               `json:"descriptionExpression"`
 	Thumbnail             json.RawMessage      `json:"thumbnail"`
 	Cells                 []*SheetListDataCell `json:"cells"`
-	Rank                  Float64              `json:"rank"`
-	Columns               Float64              `json:"columns"`
-	Rows                  Float64              `json:"rows"`
+	Rank                  PropertyFloat64      `json:"rank"`
+	Columns               PropertyFloat64      `json:"columns"`
+	Rows                  PropertyFloat64      `json:"rows"`
 	GroupID               string               `json:"groupId"`
 	Visible               bool                 `json:"visible"`
 }

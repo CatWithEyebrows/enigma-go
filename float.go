@@ -1,6 +1,7 @@
 package enigma
 
 import (
+	"encoding/json"
 	"math"
 	"strconv"
 )
@@ -38,4 +39,34 @@ func (value Float64) MarshalJSON() ([]byte, error) {
 	}
 	str := strconv.FormatFloat(val, 'f', -1, 64)
 	return []byte(str), nil
+}
+
+// PropertyFloat64 is a Float64 read from stored object properties, such as a sheet's columns or a
+// slide's rank. Properties are free-form JSON that the engine returns as stored, so a client may
+// have saved the number as a string ("32"). PropertyFloat64 accepts both, and reads "" (what the
+// engine returns for a missing property path) as 0. It marshals as a plain number.
+type PropertyFloat64 Float64
+
+// UnmarshalJSON implements the Unmarshaler interface for custom unmarshalling.
+func (value *PropertyFloat64) UnmarshalJSON(arg []byte) error {
+	if len(arg) > 0 && arg[0] == '"' {
+		var s string
+		if err := json.Unmarshal(arg, &s); err != nil {
+			return err
+		}
+		switch s {
+		case "":
+			*value = 0
+			return nil
+		case "NaN", "Infinity", "+Infinity", "-Infinity":
+		default:
+			arg = []byte(s)
+		}
+	}
+	return (*Float64)(value).UnmarshalJSON(arg)
+}
+
+// MarshalJSON implements the Marshaler interface for custom marshalling.
+func (value PropertyFloat64) MarshalJSON() ([]byte, error) {
+	return Float64(value).MarshalJSON()
 }

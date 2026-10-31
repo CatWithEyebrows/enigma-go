@@ -119,9 +119,9 @@ func TestSessionListItems(t *testing.T) {
 	assert.Len(t, sheets, 2)
 	assert.Equal(t, "s1", sheets[0].Info.Id)
 	assert.Equal(t, "One", sheets[0].Data.Title)
-	assert.Equal(t, Float64(1.5), sheets[0].Data.Rank)
+	assert.Equal(t, PropertyFloat64(1.5), sheets[0].Data.Rank)
 	assert.Equal(t, "barchart", sheets[0].Data.Cells[0].Type)
-	assert.Equal(t, Float64(50), sheets[0].Data.Cells[0].Bounds.Width)
+	assert.Equal(t, PropertyFloat64(50), sheets[0].Data.Cells[0].Bounds.Width)
 	assert.JSONEq(t, `{"title":"One","published":true}`, string(sheets[0].Meta))
 	// The engine returns "" for properties an object doesn't have
 	assert.Equal(t, SheetListData{Title: "Two"}, sheets[1].Data)
@@ -165,4 +165,16 @@ func TestFieldListExpand(t *testing.T) {
 		SourceField:           "OrderDate",
 		DerivedDefinitionName: "Calendar",
 	}, fields[1])
+}
+
+// Sheet properties are stored as the client saved them, so numbers can come back as strings.
+func TestUnmarshalSheetListDataNumbersAsStrings(t *testing.T) {
+	var item SheetListItem
+	err := json.Unmarshal([]byte(`{"qInfo":{"qId":"s1","qType":"sheet"},"qData":{"title":"Sheet","rank":"","columns":"32","rows":"32","cells":[{"name":"o1","type":"kpi","col":"0","row":0,"colspan":"12","rowspan":6,"bounds":{"x":"0","y":0,"width":"50","height":50}}]}}`), &item)
+	assert.NoError(t, err)
+	assert.Equal(t, PropertyFloat64(32), item.Data.Columns)
+	assert.Equal(t, PropertyFloat64(32), item.Data.Rows)
+	assert.Equal(t, PropertyFloat64(0), item.Data.Rank)
+	assert.Equal(t, PropertyFloat64(12), item.Data.Cells[0].Colspan)
+	assert.Equal(t, PropertyFloat64(50), item.Data.Cells[0].Bounds.Width)
 }

@@ -226,7 +226,7 @@ func (story *Story) slideRanks(ctx context.Context) ([]slideRank, error) {
 			Items []struct {
 				Info NxInfo `json:"qInfo"`
 				Data struct {
-					Rank Float64 `json:"rank"`
+					Rank PropertyFloat64 `json:"rank"`
 				} `json:"qData"`
 			} `json:"qItems"`
 		} `json:"qChildList"`

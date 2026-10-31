@@ -133,3 +133,34 @@ func BenchmarkFloatUnmarshal(b *testing.B) {
 		}
 	}
 }
+
+func TestPropertyFloatUnmarshalJSON(t *testing.T) {
+	cases := []struct {
+		json string
+		exp  float64
+	}{
+		{"32", 32},
+		{`"32"`, 32},
+		{`"-1.5"`, -1.5},
+		{`""`, 0},
+		{`"Infinity"`, math.Inf(1)},
+		{`"-Infinity"`, math.Inf(-1)},
+	}
+	for _, cas := range cases {
+		var value PropertyFloat64
+		if assert.NoError(t, json.Unmarshal([]byte(cas.json), &value), cas.json) {
+			assert.Equal(t, cas.exp, float64(value), cas.json)
+		}
+	}
+	var value PropertyFloat64
+	assert.NoError(t, json.Unmarshal([]byte(`"NaN"`), &value))
+	assert.True(t, math.IsNaN(float64(value)))
+	assert.Error(t, json.Unmarshal([]byte(`"abc"`), &value))
+	assert.Error(t, json.Unmarshal([]byte(`true`), &value))
+}
+
+func TestPropertyFloatMarshalJSON(t *testing.T) {
+	data, err := json.Marshal(struct{ V PropertyFloat64 }{32})
+	assert.NoError(t, err)
+	assert.Equal(t, `{"V":32}`, string(data))
+}
